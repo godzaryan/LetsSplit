@@ -48,43 +48,47 @@ export default function ExpenseCard({
     >
       {/* Main row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
           {/* Icon */}
           <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: 'rgba(108, 92, 231, 0.1)',
+            width: '48px',
+            height: '48px',
+            borderRadius: '16px',
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '18px',
+            fontSize: '20px',
             flexShrink: 0,
+            boxShadow: 'inset 0 0 10px rgba(230,0,0,0.05)',
           }}>
             🧾
           </div>
 
           <div style={{ minWidth: 0 }}>
             <p style={{
-              fontWeight: 600,
-              fontSize: '14px',
-              marginBottom: '3px',
+              fontWeight: 700,
+              fontSize: '15px',
+              marginBottom: '4px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              color: 'var(--text-primary)',
             }}>
               {expense.description}
             </p>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Paid by {payerNames} · {new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Paid by <span style={{ color: 'var(--text-secondary)' }}>{payerNames}</span> · {new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
               <span style={{
-                marginLeft: '8px',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: 'rgba(108, 92, 231, 0.1)',
-                fontSize: '10px',
+                marginLeft: '10px',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                background: 'rgba(230,0,0,0.1)',
+                fontSize: '11px',
                 color: 'var(--accent-primary-light)',
-                fontWeight: 500,
+                fontWeight: 600,
+                border: '1px solid rgba(230,0,0,0.15)',
               }}>
                 {splitTypeLabels[expense.split_type] || expense.split_type}
               </span>
@@ -93,13 +97,14 @@ export default function ExpenseCard({
         </div>
 
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '16px' }}>
-          <p style={{ fontWeight: 700, fontSize: '16px' }}>
+          <p style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>
             {currencySymbol}{Number(expense.total_amount).toFixed(2)}
           </p>
           {myNet !== 0 && (
             <p style={{
-              fontSize: '12px',
-              fontWeight: 500,
+              fontSize: '13px',
+              fontWeight: 600,
+              marginTop: '4px',
               color: myNet > 0 ? 'var(--accent-success)' : 'var(--accent-danger)',
             }}>
               {myNet > 0 ? `you lent ${currencySymbol}${myNet.toFixed(2)}` : `you owe ${currencySymbol}${Math.abs(myNet).toFixed(2)}`}

@@ -32,18 +32,18 @@ export default function BalanceSummary({
   return (
     <div className="animate-fade-in" style={{ maxWidth: '700px' }}>
       {/* Simplified Debts */}
-      <div className="card" style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
-            <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '2px' }}>
+            <h3 style={{ fontWeight: 800, fontSize: '15px', marginBottom: '2px', color: 'var(--text-primary)' }}>
               Simplified Debts
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Minimum transactions to settle all balances
+              Minimum transactions to settle up
             </p>
           </div>
           {simplifiedDebts.length > 0 && (
-            <button className="btn-primary" onClick={onSettleUp} style={{ fontSize: '12px', padding: '8px 14px' }}>
+            <button className="btn-primary" onClick={onSettleUp} style={{ fontSize: '12px', padding: '6px 12px' }}>
               Settle Up
             </button>
           )}
@@ -52,82 +52,92 @@ export default function BalanceSummary({
         {simplifiedDebts.length === 0 ? (
           <div style={{
             textAlign: 'center',
-            padding: '32px',
-            background: 'rgba(0, 184, 148, 0.05)',
-            borderRadius: '12px',
-            border: '1px solid rgba(0, 184, 148, 0.1)',
+            padding: '24px',
+            background: 'rgba(0, 204, 102, 0.05)',
+            borderRadius: '16px',
+            border: '1px solid rgba(0, 204, 102, 0.15)',
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-            <p style={{ fontWeight: 600, color: 'var(--accent-success)' }}>All settled up!</p>
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>✅</div>
+            <p style={{ fontWeight: 700, color: 'var(--accent-success)', fontSize: '15px' }}>All settled up!</p>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              No outstanding debts in this group.
+              No outstanding debts.
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {simplifiedDebts.map((debt, i) => (
               <div key={i} style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
                 padding: '12px 16px',
-                background: 'var(--bg-secondary)',
+                background: 'var(--bg-hover)',
                 borderRadius: '12px',
                 border: '1px solid var(--border-subtle)',
               }}>
                 <div style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  background: 'rgba(255, 107, 107, 0.1)',
+                  background: 'rgba(255, 26, 26, 0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: 700,
+                  fontSize: '13px',
+                  fontWeight: 800,
                   color: 'var(--accent-danger)',
                   flexShrink: 0,
                 }}>
                   {getMemberName(debt.from).charAt(0)}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{
-                    fontWeight: debt.from === currentMemberId ? 700 : 500,
-                    fontSize: '14px',
+                    fontWeight: debt.from === currentMemberId ? 800 : 600,
+                    fontSize: '13px',
+                    color: 'var(--text-primary)',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}>
                     {getMemberName(debt.from)}
                     {debt.from === currentMemberId && ' (you)'}
                   </span>
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>→</div>
+                <div style={{ color: 'var(--accent-primary)', fontSize: '14px', fontWeight: 800 }}>→</div>
                 <div style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  background: 'rgba(0, 184, 148, 0.1)',
+                  background: 'rgba(0, 204, 102, 0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: 700,
+                  fontSize: '13px',
+                  fontWeight: 800,
                   color: 'var(--accent-success)',
                   flexShrink: 0,
                 }}>
                   {getMemberName(debt.to).charAt(0)}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{
-                    fontWeight: debt.to === currentMemberId ? 700 : 500,
-                    fontSize: '14px',
+                    fontWeight: debt.to === currentMemberId ? 800 : 600,
+                    fontSize: '13px',
+                    color: 'var(--text-primary)',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}>
                     {getMemberName(debt.to)}
                     {debt.to === currentMemberId && ' (you)'}
                   </span>
                 </div>
                 <div style={{
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '15px',
-                  color: 'var(--accent-primary-light)',
+                  color: 'var(--text-primary)',
                   flexShrink: 0,
                 }}>
                   {currencySymbol}{debt.amount.toFixed(2)}
@@ -139,8 +149,8 @@ export default function BalanceSummary({
       </div>
 
       {/* Individual Balances */}
-      <div className="card">
-        <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '16px' }}>
+      <div>
+        <h3 style={{ fontWeight: 800, fontSize: '15px', marginBottom: '16px', color: 'var(--text-primary)' }}>
           Individual Balances
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -156,7 +166,7 @@ export default function BalanceSummary({
                   width: '120px',
                   flexShrink: 0,
                   fontSize: '13px',
-                  fontWeight: member.id === currentMemberId ? 700 : 400,
+                  fontWeight: member.id === currentMemberId ? 800 : 600,
                   color: member.id === currentMemberId ? 'var(--text-primary)' : 'var(--text-secondary)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -180,18 +190,18 @@ export default function BalanceSummary({
                       position: 'absolute',
                       left: isNegative ? `${50 - barWidth / 2}%` : '50%',
                       width: `${barWidth / 2}%`,
-                      height: '16px',
-                      borderRadius: '4px',
-                      background: isPositive ? 'rgba(0, 184, 148, 0.3)' : 'rgba(255, 107, 107, 0.3)',
-                      transition: 'all 0.3s ease',
+                      height: '12px',
+                      borderRadius: '6px',
+                      background: isPositive ? 'rgba(0, 204, 102, 0.4)' : 'rgba(255, 26, 26, 0.4)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     }} />
                   )}
                 </div>
                 <div style={{
-                  width: '100px',
+                  width: '90px',
                   textAlign: 'right',
                   fontSize: '13px',
-                  fontWeight: 600,
+                  fontWeight: 800,
                   flexShrink: 0,
                   color: isPositive ? 'var(--accent-success)' :
                          isNegative ? 'var(--accent-danger)' :
