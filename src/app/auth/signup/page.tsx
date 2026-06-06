@@ -144,16 +144,11 @@ export default function SignupPage() {
               <div style={{
                 width: '40px',
                 height: '40px',
-                borderRadius: '12px',
-                background: 'var(--gradient-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '18px',
-                color: 'white',
               }}>
-                L
+                <img src="/money-bag.svg" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <span style={{ fontWeight: 700, fontSize: '24px', letterSpacing: '-0.5px' }}>
                 LetsSplit

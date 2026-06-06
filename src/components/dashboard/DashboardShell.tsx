@@ -119,17 +119,12 @@ export default function DashboardShell({
           <div style={{
             width: '32px',
             height: '32px',
-            borderRadius: '8px',
-            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: '12px',
-            boxShadow: 'var(--shadow-glow)',
           }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
+            <img src="/money-bag.svg" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px', color: 'white' }}>
             LetsSplit

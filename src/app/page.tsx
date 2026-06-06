@@ -50,16 +50,11 @@ export default async function Home() {
           <div style={{
             width: '36px',
             height: '36px',
-            borderRadius: '10px',
-            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '16px',
-            color: 'white',
           }}>
-            L
+            <img src="/money-bag.svg" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <span style={{ fontWeight: 700, fontSize: '20px', letterSpacing: '-0.5px' }}>
             LetsSplit
