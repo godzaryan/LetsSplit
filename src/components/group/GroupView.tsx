@@ -264,6 +264,7 @@ export default function GroupView({
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
+            maxWidth: '100%',
           }}>
             {tabs.map((tab) => (
               <button

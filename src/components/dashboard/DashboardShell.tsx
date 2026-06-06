@@ -88,6 +88,7 @@ export default function DashboardShell({
     <div style={{
       display: 'flex',
       height: '100vh',
+      width: '100%',
       overflow: 'hidden',
       background: 'var(--bg-primary)',
     }}>

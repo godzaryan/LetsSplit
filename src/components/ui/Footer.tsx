@@ -1,4 +1,15 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on dashboard to prevent double scrollbars and layout breaking
+  if (pathname?.startsWith('/dashboard')) {
+    return null;
+  }
+
   return (
     <footer style={{
       textAlign: 'center',
