@@ -227,6 +227,13 @@ export default function DashboardShell({
           
           {/* User Profile */}
           <div style={{ position: 'relative' }}>
+            {/* Click outside to close user menu */}
+            {showUserMenu && (
+              <div
+                onClick={() => setShowUserMenu(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+              />
+            )}
             <div
               onClick={() => setShowUserMenu(!showUserMenu)}
               style={{
@@ -339,14 +346,6 @@ export default function DashboardShell({
       {/* Modals */}
       {showCreateModal && <CreateGroupModal onClose={() => setShowCreateModal(false)} />}
       {showJoinModal && <JoinGroupModal onClose={() => setShowJoinModal(false)} />}
-
-      {/* Click outside to close user menu */}
-      {showUserMenu && (
-        <div
-          onClick={() => setShowUserMenu(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
-        />
-      )}
     </div>
   );
 }
