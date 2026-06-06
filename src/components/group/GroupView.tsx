@@ -226,7 +226,6 @@ export default function GroupView({
                 style={{
                   padding: '8px 16px',
                   borderRadius: '12px',
-                  border: 'none',
                   background: activeTab === tab.key ? 'var(--gradient-card)' : 'transparent',
                   color: activeTab === tab.key ? 'white' : 'var(--text-muted)',
                   fontFamily: 'Inter, sans-serif',
