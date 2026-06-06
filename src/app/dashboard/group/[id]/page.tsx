@@ -19,7 +19,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   if (groupError || !group) notFound();
 
   // Fetch members
-  const { data: members } = await supabase
+  const { data: members, error: membersError } = await supabase
     .from('group_members')
     .select(`
       id,
@@ -28,7 +28,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       ghost_name,
       role,
       joined_at,
-      users (
+      users!group_members_user_id_fkey (
         id,
         display_name,
         email,
@@ -37,6 +37,10 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     `)
     .eq('group_id', groupId)
     .order('role', { ascending: true });
+
+  if (membersError) {
+    console.error('Error fetching members:', membersError);
+  }
 
   // Fetch expenses (non-deleted)
   const { data: expenses } = await supabase
