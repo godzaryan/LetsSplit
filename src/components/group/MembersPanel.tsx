@@ -70,22 +70,22 @@ export default function MembersPanel({
   };
 
   const roleColors: Record<string, string> = {
-    owner: '#fdcb6e',
-    admin: '#6c5ce7',
+    owner: '#ffaa00',
+    admin: 'var(--accent-primary-light)',
     member: 'var(--text-muted)',
   };
 
   const roleBadgeBg: Record<string, string> = {
-    owner: 'rgba(253, 203, 110, 0.1)',
-    admin: 'rgba(108, 92, 231, 0.1)',
-    member: 'rgba(104, 104, 160, 0.1)',
+    owner: 'rgba(255, 170, 0, 0.1)',
+    admin: 'rgba(230, 0, 0, 0.1)',
+    member: 'rgba(255, 255, 255, 0.05)',
   };
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '600px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: '16px' }}>
+        <h3 style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)' }}>
           Members ({members.length})
         </h3>
         {canManage && (
@@ -137,8 +137,11 @@ export default function MembersPanel({
           const isSelf = member.user_id === currentUserId;
 
           return (
-            <div key={member.id} className="card" style={{
+            <div key={member.id} style={{
               padding: '14px 18px',
+              background: 'var(--bg-hover)',
+              borderRadius: '12px',
+              border: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               gap: '14px',
@@ -148,14 +151,14 @@ export default function MembersPanel({
                 width: '40px',
                 height: '40px',
                 borderRadius: '50%',
-                background: isGhost ? 'rgba(0, 206, 201, 0.1)' : 'rgba(108, 92, 231, 0.1)',
+                background: isGhost ? 'rgba(255, 170, 0, 0.1)' : 'rgba(230, 0, 0, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontSize: '16px',
                 flexShrink: 0,
-                color: isGhost ? 'var(--accent-secondary)' : 'var(--accent-primary-light)',
+                color: isGhost ? 'var(--accent-warning)' : 'var(--accent-primary-light)',
                 overflow: 'hidden',
               }}>
                 {member.users?.avatar_url ? (
@@ -169,8 +172,9 @@ export default function MembersPanel({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
-                    fontWeight: isSelf ? 700 : 500,
+                    fontWeight: isSelf ? 800 : 600,
                     fontSize: '14px',
+                    color: 'var(--text-primary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -178,20 +182,20 @@ export default function MembersPanel({
                     {name}{isSelf && ' (you)'}
                   </span>
                   {isGhost && (
-                    <span style={{
+                     <span style={{
                       fontSize: '10px',
                       padding: '2px 6px',
                       borderRadius: '4px',
-                      background: 'rgba(0, 206, 201, 0.1)',
-                      color: 'var(--accent-secondary)',
-                      fontWeight: 600,
+                      background: 'rgba(255, 170, 0, 0.1)',
+                      color: 'var(--accent-warning)',
+                      fontWeight: 700,
                     }}>
                       GUEST
                     </span>
                   )}
                 </div>
                 {email && (
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px' }}>{email}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{email}</p>
                 )}
               </div>
 
@@ -200,7 +204,7 @@ export default function MembersPanel({
                 padding: '4px 10px',
                 borderRadius: '6px',
                 fontSize: '11px',
-                fontWeight: 600,
+                fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
                 background: roleBadgeBg[member.role],
@@ -222,7 +226,7 @@ export default function MembersPanel({
                     background: 'transparent',
                     color: 'var(--text-muted)',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: '16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -230,7 +234,7 @@ export default function MembersPanel({
                     flexShrink: 0,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,107,107,0.1)';
+                    e.currentTarget.style.background = 'rgba(255, 26, 26, 0.15)';
                     e.currentTarget.style.color = 'var(--accent-danger)';
                   }}
                   onMouseLeave={(e) => {
