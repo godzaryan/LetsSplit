@@ -266,6 +266,13 @@ html, body {
   width: 100%;
 }
 
+.landing-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+}
+
 .top-header {
   height: var(--header-height);
   position: sticky;
@@ -516,6 +523,18 @@ html, body {
   }
 
   /* Landing page */
+  .landing-nav {
+    padding: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .landing-nav-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
   .hero-buttons {
     flex-direction: column !important;
     width: 100%;

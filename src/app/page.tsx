@@ -42,11 +42,7 @@ export default async function Home() {
       }} />
 
       {/* Navigation */}
-      <nav style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '20px 40px',
+      <nav className="landing-nav" style={{
         position: 'relative',
         zIndex: 10,
       }}>
@@ -69,7 +65,7 @@ export default async function Home() {
             LetsSplit
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="landing-nav-buttons" style={{ display: 'flex', gap: '12px' }}>
           <Link href="/auth/login" className="btn-secondary" style={{ textDecoration: 'none' }}>
             Log In
           </Link>
