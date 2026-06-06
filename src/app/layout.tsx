@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import GlobalLoader from "@/components/ui/GlobalLoader";
 
 export const metadata: Metadata = {
   title: "LetsSplit — Smart Group Expense Manager",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <GlobalLoader />
         {children}
       </body>
     </html>
