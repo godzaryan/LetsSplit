@@ -10,6 +10,7 @@ interface AddExpenseModalProps {
   currency: string;
   currencySymbol: string;
   currentMemberId: string;
+  initialData?: any;
   onClose: () => void;
 }
 
@@ -21,25 +22,62 @@ export default function AddExpenseModal({
   currency,
   currencySymbol,
   currentMemberId,
+  initialData,
   onClose,
 }: AddExpenseModalProps) {
-  const [description, setDescription] = useState('');
-  const [totalAmount, setTotalAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [splitType, setSplitType] = useState<SplitType>('equal');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [totalAmount, setTotalAmount] = useState(initialData?.total_amount ? String(initialData.total_amount) : '');
+  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [splitType, setSplitType] = useState<SplitType>(initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Payer state — who paid and how much
-  const [payers, setPayers] = useState<Record<string, string>>({ [currentMemberId]: '' });
+  const [payers, setPayers] = useState<Record<string, string>>(() => {
+    if (initialData?.expense_payers?.length) {
+      const p: Record<string, string> = {};
+      initialData.expense_payers.forEach((payer: any) => p[payer.member_id] = String(payer.amount_paid));
+      return p;
+    }
+    return { [currentMemberId]: '' };
+  });
 
   // Split state
-  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
-    new Set(members.map((m: any) => m.id))
-  );
-  const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
-  const [percentages, setPercentages] = useState<Record<string, string>>({});
-  const [shareValues, setShareValues] = useState<Record<string, string>>({});
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(() => {
+    if (initialData?.expense_splits?.length) {
+      const s = new Set<string>();
+      initialData.expense_splits.forEach((split: any) => s.add(split.member_id));
+      return s;
+    }
+    return new Set(members.map((m: any) => m.id));
+  });
+
+  const [exactAmounts, setExactAmounts] = useState<Record<string, string>>(() => {
+    if (initialData?.split_type === 'exact' && initialData?.expense_splits?.length) {
+      const ex: Record<string, string> = {};
+      initialData.expense_splits.forEach((split: any) => ex[split.member_id] = String(split.amount_owed));
+      return ex;
+    }
+    return {};
+  });
+
+  const [percentages, setPercentages] = useState<Record<string, string>>(() => {
+    if (initialData?.split_type === 'percentage' && initialData?.expense_splits?.length) {
+      const pc: Record<string, string> = {};
+      initialData.expense_splits.forEach((split: any) => pc[split.member_id] = String(split.percentage));
+      return pc;
+    }
+    return {};
+  });
+
+  const [shareValues, setShareValues] = useState<Record<string, string>>(() => {
+    if (initialData?.split_type === 'shares' && initialData?.expense_splits?.length) {
+      const sh: Record<string, string> = {};
+      initialData.expense_splits.forEach((split: any) => sh[split.member_id] = String(split.shares));
+      return sh;
+    }
+    return {};
+  });
 
   // Receipt state
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -153,28 +191,51 @@ export default function AddExpenseModal({
     setError('');
 
     try {
-      // 1. Create expense
-      const { data: expense, error: expError } = await supabase
-        .from('expenses')
-        .insert({
-          group_id: groupId,
-          description: description.trim(),
-          total_amount: total,
-          currency,
-          split_type: splitType,
-          date,
-          created_by: currentMemberId,
-        })
-        .select()
-        .single();
+      let expenseId = initialData?.id;
 
-      if (expError) throw expError;
+      if (initialData) {
+        // Update existing expense
+        const { error: expError } = await supabase
+          .from('expenses')
+          .update({
+            description: description.trim(),
+            total_amount: total,
+            currency,
+            split_type: splitType,
+            date,
+          })
+          .eq('id', expenseId);
+
+        if (expError) throw expError;
+
+        // Delete old payers and splits
+        await supabase.from('expense_payers').delete().eq('expense_id', expenseId);
+        await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
+      } else {
+        // Create new expense
+        const { data: expense, error: expError } = await supabase
+          .from('expenses')
+          .insert({
+            group_id: groupId,
+            description: description.trim(),
+            total_amount: total,
+            currency,
+            split_type: splitType,
+            date,
+            created_by: currentMemberId,
+          })
+          .select()
+          .single();
+
+        if (expError) throw expError;
+        expenseId = expense.id;
+      }
 
       // 2. Insert payers
       const payerRows = Object.entries(payers)
         .filter(([, v]) => parseFloat(v) > 0)
         .map(([memberId, amount]) => ({
-          expense_id: expense.id,
+          expense_id: expenseId,
           member_id: memberId,
           amount_paid: parseFloat(amount),
         }));
@@ -190,7 +251,7 @@ export default function AddExpenseModal({
       const splitRows = Object.entries(splitPreview)
         .filter(([, amount]) => amount > 0)
         .map(([memberId, amount]) => ({
-          expense_id: expense.id,
+          expense_id: expenseId,
           member_id: memberId,
           amount_owed: amount,
           percentage: splitType === 'percentage' ? parseFloat(percentages[memberId] || '0') : null,
@@ -207,11 +268,11 @@ export default function AddExpenseModal({
       // 4. Upload receipt if attached
       if (receiptFile) {
         try {
-          const receiptUrl = await uploadReceipt(receiptFile, groupId, expense.id);
+          const receiptUrl = await uploadReceipt(receiptFile, groupId, expenseId);
           await supabase
             .from('expenses')
             .update({ receipt_url: receiptUrl })
-            .eq('id', expense.id);
+            .eq('id', expenseId);
         } catch {
           // Non-fatal — expense is still created
           console.error('Receipt upload failed');
@@ -248,7 +309,7 @@ export default function AddExpenseModal({
         padding: '28px',
       }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px' }}>
-          Add Expense
+          {initialData ? 'Edit Expense' : 'Add Expense'}
         </h2>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -652,7 +713,7 @@ export default function AddExpenseModal({
               }}
               id="expense-submit"
             >
-              {loading ? 'Adding...' : 'Add Expense'}
+              {loading ? 'Saving...' : initialData ? 'Save Changes' : 'Add Expense'}
             </button>
           </div>
         </form>

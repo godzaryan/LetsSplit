@@ -32,7 +32,24 @@ export default function GroupView({
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'audit' | 'settings'>('expenses');
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showSettleUp, setShowSettleUp] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+      if (error) throw error;
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete expense');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const currencySymbol = group.currency === 'INR' ? '₹' : group.currency === 'USD' ? '$' : group.currency === 'EUR' ? '€' : '£';
 
@@ -200,7 +217,7 @@ export default function GroupView({
             <button className="btn-secondary" onClick={() => setShowSettleUp(true)} style={{ padding: '10px 16px', fontSize: '14px' }}>
               Settle Up
             </button>
-            <button className="btn-primary" onClick={() => setShowAddExpense(true)} style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 600 }}>
+            <button className="btn-primary" onClick={() => { setExpenseToEdit(null); setShowAddExpense(true); }} style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 600 }}>
               + Add Expense
             </button>
           </div>
@@ -253,7 +270,7 @@ export default function GroupView({
                     <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '32px' }}>
                       Add your first expense to start tracking who owes what.
                     </p>
-                    <button className="btn-primary" onClick={() => setShowAddExpense(true)} style={{ padding: '12px 24px', fontSize: '15px' }}>
+                    <button className="btn-primary" onClick={() => { setExpenseToEdit(null); setShowAddExpense(true); }} style={{ padding: '12px 24px', fontSize: '15px' }}>
                       + Add First Expense
                     </button>
                   </div>
@@ -267,6 +284,9 @@ export default function GroupView({
                         currencySymbol={currencySymbol}
                         getMemberName={getMemberName}
                         currentMemberId={currentMemberId}
+                        currentRole={currentRole}
+                        onEdit={(exp) => { setExpenseToEdit(exp); setShowAddExpense(true); }}
+                        onDelete={handleDeleteExpense}
                       />
                     ))}
                   </div>
@@ -327,8 +347,10 @@ export default function GroupView({
           currency={group.currency}
           currencySymbol={currencySymbol}
           currentMemberId={currentMemberId}
+          initialData={expenseToEdit}
           onClose={() => {
             setShowAddExpense(false);
+            setExpenseToEdit(null);
             router.refresh();
           }}
         />

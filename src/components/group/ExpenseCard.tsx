@@ -8,6 +8,9 @@ interface ExpenseCardProps {
   currencySymbol: string;
   getMemberName: (id: string) => string;
   currentMemberId: string;
+  currentRole: string;
+  onEdit?: (expense: any) => void;
+  onDelete?: (expenseId: string) => void;
 }
 
 export default function ExpenseCard({
@@ -16,6 +19,9 @@ export default function ExpenseCard({
   currencySymbol,
   getMemberName,
   currentMemberId,
+  currentRole,
+  onEdit,
+  onDelete,
 }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -35,6 +41,8 @@ export default function ExpenseCard({
     shares: 'Shares',
     itemized: 'Itemized',
   };
+
+  const canModify = currentRole === 'owner' || currentRole === 'admin' || expense.created_by === currentMemberId;
 
   return (
     <div
@@ -186,6 +194,23 @@ export default function ExpenseCard({
               >
                 📎 View Receipt
               </a>
+            </div>
+          )}
+
+          {canModify && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onEdit?.(expense); }}
+                className="btn-secondary" 
+                style={{ flex: 1, padding: '8px', fontSize: '13px' }}>
+                ✏️ Edit Expense
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDelete?.(expense.id); }}
+                className="btn-secondary" 
+                style={{ flex: 1, padding: '8px', fontSize: '13px', color: 'var(--accent-danger)', borderColor: 'rgba(230,0,0,0.2)' }}>
+                🗑️ Delete
+              </button>
             </div>
           )}
         </div>
