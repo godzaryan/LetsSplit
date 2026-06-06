@@ -12,7 +12,10 @@ export default async function DashboardPage() {
   // Fetch user's group memberships
   const { data: memberships } = await supabase
     .from('group_members')
-    .select('id, group_id')
+    .select(`
+      id, group_id,
+      groups ( id, name, icon_url, currency )
+    `)
     .eq('user_id', user.id)
     .eq('is_ghost', false);
 
@@ -23,6 +26,7 @@ export default async function DashboardPage() {
   let globalOwe = 0;
   let globalOwed = 0;
   let thisMonthSpend = 0;
+  let recentActivity: any[] = [];
 
   if (groupIds.length > 0) {
     const { data: expenses } = await supabase
@@ -69,6 +73,19 @@ export default async function DashboardPage() {
       if (balance > 0.01) globalOwed += balance;
       else if (balance < -0.01) globalOwe += Math.abs(balance);
     });
+
+    const { data: logs } = await supabase
+      .from('audit_logs')
+      .select(`
+        id, action, created_at, new_data, old_data,
+        groups(name),
+        users:changed_by(display_name, email)
+      `)
+      .in('group_id', groupIds)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    recentActivity = logs || [];
   }
 
   // Determine user's primary currency (default INR)
@@ -142,42 +159,85 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* Empty state / Main Action Area */}
-          <div className="card animate-fade-in" style={{
-            textAlign: 'center',
-            padding: '60px 32px',
-            animationDelay: '300ms',
-            animationFillMode: 'both',
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: 'rgba(230, 0, 0, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '36px',
-              margin: '0 auto 20px',
-              boxShadow: '0 0 30px rgba(230, 0, 0, 0.2)',
+          {/* Main Action Area / Group List */}
+          {totalGroups === 0 ? (
+            <div className="card animate-fade-in" style={{
+              textAlign: 'center',
+              padding: '60px 32px',
+              animationDelay: '300ms',
+              animationFillMode: 'both',
             }}>
-              🚀
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'rgba(230, 0, 0, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '36px',
+                margin: '0 auto 20px',
+                boxShadow: '0 0 30px rgba(230, 0, 0, 0.2)',
+              }}>
+                🚀
+              </div>
+              <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                Get started with LetsSplit
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '400px', margin: '0 auto 24px', lineHeight: 1.7 }}>
+                Create your first group or join an existing one using an invite code. Start tracking shared expenses effortlessly!
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn-primary" id="create-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
+                  + Create Group
+                </button>
+                <button className="btn-secondary" id="join-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
+                  Join with Code
+                </button>
+              </div>
             </div>
-            <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'var(--text-primary)' }}>
-              Get started with LetsSplit
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '400px', margin: '0 auto 24px', lineHeight: 1.7 }}>
-              Create your first group or join an existing one using an invite code. Start tracking shared expenses effortlessly!
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button className="btn-primary" id="create-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
-                + Create Group
-              </button>
-              <button className="btn-secondary" id="join-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
-                Join with Code
-              </button>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>Your Active Groups</h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
+                {memberships?.map((m: any, i: number) => (
+                  <a key={m.groups.id} href={`/dashboard/group/${m.groups.id}`} className="card animate-fade-in" style={{
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    animationDelay: `${300 + (i * 50)}ms`,
+                    animationFillMode: 'both',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)'
+                    }}>
+                      {m.groups.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>{m.groups.name}</h4>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{m.groups.currency} Based</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column (Creative Widgets) */}
@@ -211,21 +271,56 @@ export default async function DashboardPage() {
             <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '16px' }}>Recent Activity</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.5 }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                  👋
-                </div>
-                <div>
-                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to LetsSplit!</p>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Just now</p>
-                </div>
-              </div>
+              {recentActivity.length === 0 ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.5 }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+                      👋
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to LetsSplit!</p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Just now</p>
+                    </div>
+                  </div>
 
-              <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)' }} />
-              
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
-                Your activity across all groups will appear here.
-              </p>
+                  <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)' }} />
+                  
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+                    Your activity across all groups will appear here.
+                  </p>
+                </>
+              ) : (
+                recentActivity.map((log: any) => {
+                  const actor = log.users?.display_name || log.users?.email?.split('@')[0] || 'Someone';
+                  const actionMap: Record<string, string> = { created: 'added an expense', updated: 'updated an expense', deleted: 'deleted an expense' };
+                  const colorMap: Record<string, string> = { created: 'var(--accent-success)', updated: 'var(--accent-warning)', deleted: 'var(--accent-danger)' };
+                  const desc = log.new_data?.description || log.old_data?.description || 'an item';
+                  const d = new Date(log.created_at);
+                  const timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                  
+                  return (
+                    <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        borderRadius: '50%', 
+                        background: colorMap[log.action] || 'var(--border-active)',
+                        marginTop: '6px',
+                        flexShrink: 0
+                      }} />
+                      <div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{actor}</span>
+                          {' '} {actionMap[log.action] || 'modified something'} {' '}
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-primary)' }}>&quot;{desc}&quot;</span>
+                          {' '} in <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.groups?.name || 'a group'}</span>
+                        </p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{timeStr}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
