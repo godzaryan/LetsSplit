@@ -124,7 +124,7 @@ export default function DashboardShell({
             justifyContent: 'center',
             marginRight: '12px',
           }}>
-            <img src="/money-bag.svg" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src="/money-bag.png" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px', color: 'white' }}>
             LetsSplit

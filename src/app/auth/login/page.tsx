@@ -96,7 +96,7 @@ export default function LoginPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <img src="/money-bag.svg" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src="/money-bag.png" alt="LetsSplit Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <span style={{ fontWeight: 700, fontSize: '24px', letterSpacing: '-0.5px' }}>
                 LetsSplit
