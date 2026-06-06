@@ -6,6 +6,72 @@ export default async function DashboardPage() {
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
+  // Fetch user's group memberships
+  const { data: memberships } = await supabase
+    .from('group_members')
+    .select('id, group_id')
+    .eq('user_id', user.id)
+    .eq('is_ghost', false);
+
+  const totalGroups = memberships?.length || 0;
+  const userMemberIds = memberships?.map(m => m.id) || [];
+  const groupIds = memberships?.map(m => m.group_id) || [];
+
+  let globalOwe = 0;
+  let globalOwed = 0;
+  let thisMonthSpend = 0;
+
+  if (groupIds.length > 0) {
+    const { data: expenses } = await supabase
+      .from('expenses')
+      .select(`
+        id, group_id, total_amount, date,
+        expense_payers ( member_id, amount_paid ),
+        expense_splits ( member_id, amount_owed )
+      `)
+      .in('group_id', groupIds)
+      .eq('is_deleted', false);
+
+    const { data: settlements } = await supabase
+      .from('settlements')
+      .select('*')
+      .in('group_id', groupIds);
+
+    const groupBalances: Record<string, number> = {};
+    const now = new Date();
+
+    expenses?.forEach((exp: any) => {
+      const userPaid = exp.expense_payers?.filter((p: any) => userMemberIds.includes(p.member_id)).reduce((sum: number, p: any) => sum + Number(p.amount_paid), 0) || 0;
+      const userOwes = exp.expense_splits?.filter((s: any) => userMemberIds.includes(s.member_id)).reduce((sum: number, s: any) => sum + Number(s.amount_owed), 0) || 0;
+      
+      groupBalances[exp.group_id] = (groupBalances[exp.group_id] || 0) + (userPaid - userOwes);
+
+      const expDate = new Date(exp.date);
+      if (expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()) {
+        thisMonthSpend += userOwes;
+      }
+    });
+
+    settlements?.forEach((s: any) => {
+      const amount = Number(s.amount);
+      if (userMemberIds.includes(s.from_member)) {
+        groupBalances[s.group_id] = (groupBalances[s.group_id] || 0) + amount;
+      }
+      if (userMemberIds.includes(s.to_member)) {
+        groupBalances[s.group_id] = (groupBalances[s.group_id] || 0) - amount;
+      }
+    });
+
+    Object.values(groupBalances).forEach(balance => {
+      if (balance > 0.01) globalOwed += balance;
+      else if (balance < -0.01) globalOwe += Math.abs(balance);
+    });
+  }
+
+  // Determine user's primary currency (default INR)
+  // In a real app we'd fetch this from user profile or use the most frequent group currency
+  const currencySymbol = '₹';
+
   return (
     <div className="page-container">
       {/* Welcome header */}
@@ -35,10 +101,10 @@ export default async function DashboardPage() {
             marginBottom: '32px',
           }}>
             {[
-              { label: 'Total Groups', value: '0', icon: '👥', color: 'var(--accent-primary-light)' },
-              { label: 'You Owe', value: '₹0.00', icon: '📤', color: 'var(--accent-danger)' },
-              { label: 'You\'re Owed', value: '₹0.00', icon: '📥', color: 'var(--accent-success)' },
-              { label: 'This Month', value: '₹0.00', icon: '📊', color: 'var(--accent-warning)' },
+              { label: 'Total Groups', value: totalGroups.toString(), icon: '👥', color: 'var(--accent-primary-light)' },
+              { label: 'You Owe', value: `${currencySymbol}${globalOwe.toFixed(2)}`, icon: '📤', color: 'var(--accent-danger)' },
+              { label: 'You\'re Owed', value: `${currencySymbol}${globalOwed.toFixed(2)}`, icon: '📥', color: 'var(--accent-success)' },
+              { label: 'This Month', value: `${currencySymbol}${thisMonthSpend.toFixed(2)}`, icon: '📊', color: 'var(--accent-warning)' },
             ].map((stat, i) => (
               <div key={i} className="card animate-fade-in" style={{
                 animationDelay: `${i * 80}ms`,
