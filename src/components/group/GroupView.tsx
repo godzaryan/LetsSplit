@@ -127,7 +127,6 @@ export default function GroupView({
 
   const tabs = [
     { key: 'expenses', label: 'Expenses', icon: '📋' },
-    { key: 'balances', label: 'Balances', icon: '⚖️' },
     { key: 'members', label: `Members (${members.length})`, icon: '👥' },
     { key: 'audit', label: 'Audit Log', icon: '📜' },
     { key: 'settings', label: 'Settings', icon: '⚙️' },
@@ -138,170 +137,187 @@ export default function GroupView({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Group Header */}
+    <div className="page-container">
+      {/* Hero Banner Header */}
       <div style={{
-        padding: '24px 32px 0',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border-subtle)',
+        padding: '40px 32px',
+        background: 'var(--gradient-hero)',
+        borderRadius: '24px',
+        border: '1px solid var(--border-active)',
+        marginBottom: '32px',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-md)',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        {/* Glow effect */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '-50px', left: '-50px', 
+          width: '300px', height: '300px', 
+          background: 'var(--accent-primary)', 
+          opacity: 0.15, 
+          filter: 'blur(100px)', 
+          borderRadius: '50%' 
+        }} />
+        
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px' }}>
+            <h1 style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '8px', color: 'white' }}>
               {group.name}
             </h1>
             {group.description && (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{group.description}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>{group.description}</p>
             )}
+            
+            {/* Quick stats bar */}
+            <div style={{
+              display: 'flex',
+              gap: '24px',
+              marginTop: '24px',
+              fontSize: '14px',
+            }}>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Total Spend: </span>
+                <span style={{ fontWeight: 700, color: 'white' }}>{currencySymbol}{totalExpenses.toFixed(2)}</span>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Your Balance: </span>
+                <span style={{
+                  fontWeight: 700,
+                  color: myBalance > 0.01 ? 'var(--accent-success)' : myBalance < -0.01 ? 'var(--accent-danger)' : 'white',
+                }}>
+                  {myBalance > 0.01 ? `+${currencySymbol}${myBalance.toFixed(2)}` :
+                   myBalance < -0.01 ? `-${currencySymbol}${Math.abs(myBalance).toFixed(2)}` :
+                   'Settled up'}
+                </span>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              className="btn-secondary"
-              onClick={handleExport}
-              style={{ fontSize: '13px', padding: '8px 16px' }}
-              title="Export ledger to CSV"
-            >
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button className="btn-secondary" onClick={handleExport} style={{ padding: '10px 16px', fontSize: '14px' }}>
               📤 Export
             </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setShowSettleUp(true)}
-              style={{ fontSize: '13px', padding: '8px 16px' }}
-            >
+            <button className="btn-secondary" onClick={() => setShowSettleUp(true)} style={{ padding: '10px 16px', fontSize: '14px' }}>
               Settle Up
             </button>
-            <button
-              className="btn-primary"
-              onClick={() => setShowAddExpense(true)}
-              style={{ fontSize: '13px', padding: '8px 16px' }}
-              id="add-expense-btn"
-            >
+            <button className="btn-primary" onClick={() => setShowAddExpense(true)} style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 600 }}>
               + Add Expense
             </button>
           </div>
         </div>
-
-        {/* Quick stats bar */}
-        <div style={{
-          display: 'flex',
-          gap: '24px',
-          marginBottom: '16px',
-          fontSize: '13px',
-        }}>
-          <div>
-            <span style={{ color: 'var(--text-muted)' }}>Total: </span>
-            <span style={{ fontWeight: 600 }}>{currencySymbol}{totalExpenses.toFixed(2)}</span>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-muted)' }}>Your balance: </span>
-            <span style={{
-              fontWeight: 600,
-              color: myBalance > 0.01 ? 'var(--accent-success)' : myBalance < -0.01 ? 'var(--accent-danger)' : 'var(--text-primary)',
-            }}>
-              {myBalance > 0.01 ? `+${currencySymbol}${myBalance.toFixed(2)}` :
-               myBalance < -0.01 ? `-${currencySymbol}${Math.abs(myBalance).toFixed(2)}` :
-               'Settled up'}
-            </span>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-muted)' }}>Members: </span>
-            <span style={{ fontWeight: 600 }}>{members.length}</span>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              style={{
-                padding: '10px 18px',
-                borderRadius: '10px 10px 0 0',
-                border: 'none',
-                background: activeTab === tab.key ? 'var(--bg-primary)' : 'transparent',
-                color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '13px',
-                fontWeight: activeTab === tab.key ? 600 : 400,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                borderBottom: activeTab === tab.key ? '2px solid var(--accent-primary)' : '2px solid transparent',
-              }}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Tab Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
-        {activeTab === 'expenses' && (
-          <div className="animate-fade-in">
-            {expenses.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 32px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧾</div>
-                <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>No expenses yet</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
-                  Add your first expense to start tracking who owes what.
-                </p>
-                <button className="btn-primary" onClick={() => setShowAddExpense(true)}>
-                  + Add First Expense
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {expenses.map((expense: any) => (
-                  <ExpenseCard
-                    key={expense.id}
-                    expense={expense}
-                    members={members}
-                    currencySymbol={currencySymbol}
-                    getMemberName={getMemberName}
-                    currentMemberId={currentMemberId}
-                  />
-                ))}
+      <div className="dashboard-grid">
+        {/* Left Column (Main Content) */}
+        <div>
+          {/* Tabs */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '8px', 
+            marginBottom: '24px', 
+            borderBottom: '1px solid var(--border-subtle)', 
+            paddingBottom: '12px',
+            overflowX: 'auto' 
+          }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: activeTab === tab.key ? 'var(--gradient-card)' : 'transparent',
+                  color: activeTab === tab.key ? 'white' : 'var(--text-muted)',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '14px',
+                  fontWeight: activeTab === tab.key ? 600 : 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  border: activeTab === tab.key ? '1px solid var(--border-active)' : '1px solid transparent',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div style={{ minHeight: '400px' }}>
+            {activeTab === 'expenses' && (
+              <div className="animate-fade-in">
+                {expenses.length === 0 ? (
+                  <div className="card" style={{ textAlign: 'center', padding: '80px 32px' }}>
+                    <div style={{ fontSize: '56px', marginBottom: '24px' }}>🧾</div>
+                    <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'white' }}>No expenses yet</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '32px' }}>
+                      Add your first expense to start tracking who owes what.
+                    </p>
+                    <button className="btn-primary" onClick={() => setShowAddExpense(true)} style={{ padding: '12px 24px', fontSize: '15px' }}>
+                      + Add First Expense
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {expenses.map((expense: any) => (
+                      <ExpenseCard
+                        key={expense.id}
+                        expense={expense}
+                        members={members}
+                        currencySymbol={currencySymbol}
+                        getMemberName={getMemberName}
+                        currentMemberId={currentMemberId}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
+            {activeTab === 'members' && (
+              <MembersPanel
+                group={group}
+                members={members}
+                currentUserId={currentUserId}
+                currentRole={currentRole}
+              />
+            )}
+
+            {activeTab === 'audit' && (
+              <AuditLogViewer
+                groupId={group.id}
+                getMemberName={getMemberName}
+                currencySymbol={currencySymbol}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <GroupSettings
+                group={group}
+                currentRole={currentRole}
+              />
+            )}
           </div>
-        )}
+        </div>
 
-        {activeTab === 'balances' && (
-          <BalanceSummary
-            members={members}
-            netBalances={netBalances}
-            simplifiedDebts={simplifiedDebts}
-            currencySymbol={currencySymbol}
-            getMemberName={getMemberName}
-            currentMemberId={currentMemberId}
-            onSettleUp={() => setShowSettleUp(true)}
-          />
-        )}
-
-        {activeTab === 'members' && (
-          <MembersPanel
-            group={group}
-            members={members}
-            currentUserId={currentUserId}
-            currentRole={currentRole}
-          />
-        )}
-
-        {activeTab === 'audit' && (
-          <AuditLogViewer
-            groupId={group.id}
-            getMemberName={getMemberName}
-            currencySymbol={currencySymbol}
-          />
-        )}
-
-        {activeTab === 'settings' && (
-          <GroupSettings
-            group={group}
-            currentRole={currentRole}
-          />
-        )}
+        {/* Right Column (Balances Widget) */}
+        <div style={{ position: 'sticky', top: 'calc(var(--header-height) + 32px)' }}>
+          <div className="card" style={{ padding: '24px', boxShadow: 'var(--shadow-md)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚖️ Balance Summary
+            </h3>
+            <BalanceSummary
+              members={members}
+              netBalances={netBalances}
+              simplifiedDebts={simplifiedDebts}
+              currencySymbol={currencySymbol}
+              getMemberName={getMemberName}
+              currentMemberId={currentMemberId}
+              onSettleUp={() => setShowSettleUp(true)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Modals */}

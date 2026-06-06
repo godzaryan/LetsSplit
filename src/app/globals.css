@@ -3,47 +3,49 @@
 @import "tailwindcss";
 
 :root {
-  /* Color System — Premium Dark Theme */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
-  --bg-card: #16162a;
-  --bg-hover: #1e1e3a;
-  --bg-glass: rgba(22, 22, 42, 0.7);
+  /* Color System — Red Aesthetic Dark Theme */
+  --bg-primary: #0a0303;
+  --bg-secondary: #120505;
+  --bg-tertiary: #1a0808;
+  --bg-card: #160606;
+  --bg-hover: #1e0a0a;
+  --bg-glass: rgba(22, 6, 6, 0.7);
 
   /* Accent Colors */
-  --accent-primary: #6c5ce7;
-  --accent-primary-light: #a29bfe;
-  --accent-secondary: #00cec9;
-  --accent-warning: #fdcb6e;
-  --accent-danger: #ff6b6b;
-  --accent-success: #00b894;
+  --accent-primary: #e60000;
+  --accent-primary-light: #ff3333;
+  --accent-secondary: #990000;
+  --accent-warning: #ffaa00;
+  --accent-danger: #ff1a1a;
+  --accent-success: #00cc66;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #00cec9 100%);
-  --gradient-card: linear-gradient(135deg, rgba(108, 92, 231, 0.1) 0%, rgba(0, 206, 201, 0.05) 100%);
-  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  --gradient-shine: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  --gradient-primary: linear-gradient(135deg, #e60000 0%, #ff3333 50%, #990000 100%);
+  --gradient-card: linear-gradient(135deg, rgba(230, 0, 0, 0.08) 0%, rgba(153, 0, 0, 0.03) 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%);
+  --gradient-shine: linear-gradient(90deg, transparent 0%, rgba(255,51,51,0.1) 50%, transparent 100%);
+  --gradient-hero: linear-gradient(135deg, rgba(26, 8, 8, 0.95) 0%, rgba(230, 0, 0, 0.15) 100%);
 
   /* Text Colors */
-  --text-primary: #e8e8f0;
-  --text-secondary: #9898b0;
-  --text-muted: #6868a0;
-  --text-accent: #a29bfe;
+  --text-primary: #f0e6e6;
+  --text-secondary: #b09898;
+  --text-muted: #806060;
+  --text-accent: #ff6666;
 
   /* Borders */
-  --border-subtle: rgba(108, 92, 231, 0.15);
-  --border-active: rgba(108, 92, 231, 0.4);
+  --border-subtle: rgba(230, 0, 0, 0.15);
+  --border-active: rgba(230, 0, 0, 0.4);
 
   /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(108, 92, 231, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(230, 0, 0, 0.3);
 
-  /* Spacing */
-  --sidebar-width: 72px;
-  --sidebar-expanded: 280px;
+  /* Spacing & Layout */
+  --sidebar-width: 260px;
+  --header-height: 72px;
+  --content-max-width: 1400px;
 
   /* Font */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -117,8 +119,8 @@ html, body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(108, 92, 231, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(108, 92, 231, 0.5); }
+  0%, 100% { box-shadow: 0 0 20px rgba(230, 0, 0, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(230, 0, 0, 0.5); }
 }
 
 @keyframes shimmer {
@@ -201,7 +203,7 @@ html, body {
 
 .input-field:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+  box-shadow: 0 0 0 3px rgba(230, 0, 0, 0.15);
 }
 
 .input-field::placeholder {
@@ -214,12 +216,110 @@ html, body {
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 24px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-card);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .card:hover {
   border-color: var(--border-active);
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+/* Base content inside cards needs relative positioning so the background hover doesn't cover it */
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== Layout Utilities ========== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.page-container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 32px;
+  width: 100%;
+}
+
+.top-header {
+  height: var(--header-height);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(10, 3, 3, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+}
+
+.sidebar-link:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-link.active {
+  background: var(--gradient-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 0 20px rgba(230, 0, 0, 0.05);
+}
+
+.sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 24px;
+  width: 4px;
+  background: var(--accent-primary);
+  border-radius: 0 4px 4px 0;
 }
 
 /* ========== Skeleton Loader ========== */
@@ -389,19 +489,26 @@ html, body {
     display: flex;
   }
 
-  /* Sidebar becomes a slide-out drawer */
   .sidebar-desktop {
     position: fixed;
-    left: -80px;
+    left: -280px;
     top: 0;
     bottom: 0;
     z-index: 95;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    width: 72px;
+    width: 260px;
   }
 
   .sidebar-desktop.open {
     left: 0;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-container, .top-header {
+    padding: 16px;
   }
 
   /* Landing page */
@@ -525,6 +632,6 @@ html, body {
 
 /* ========== Selection ========== */
 ::selection {
-  background: rgba(108, 92, 231, 0.3);
+  background: rgba(230, 0, 0, 0.3);
   color: white;
 }

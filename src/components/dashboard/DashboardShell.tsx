@@ -72,238 +72,111 @@ export default function DashboardShell({
         onClick={() => setIsMobileOpen(false)}
       />
 
-      {/* Discord-style Server Sidebar */}
+      {/* New Desktop Sidebar (260px) */}
       <div className={`sidebar-desktop ${isMobileOpen ? 'open' : ''}`} style={{
         background: 'var(--bg-secondary)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        padding: '12px 0',
-        gap: '8px',
         borderRight: '1px solid var(--border-subtle)',
         flexShrink: 0,
         overflowY: 'auto',
         overflowX: 'hidden',
       }}>
-        {/* Home button */}
-        <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+        {/* Brand Header */}
+        <div style={{
+          height: 'var(--header-height)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          borderBottom: '1px solid var(--border-subtle)',
+          flexShrink: 0,
+        }}>
           <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: pathname === '/dashboard' ? '16px' : '24px',
-            background: pathname === '/dashboard' ? 'var(--gradient-primary)' : 'var(--bg-tertiary)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-          }}
-          title="Home"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+            marginRight: '12px',
+            boxShadow: 'var(--shadow-glow)',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           </div>
-        </Link>
+          <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px', color: 'white' }}>
+            LetsSplit
+          </span>
+        </div>
 
-        {/* Divider */}
-        <div style={{
-          width: '32px',
-          height: '2px',
-          background: 'var(--border-subtle)',
-          borderRadius: '1px',
-          margin: '4px 0',
-        }} />
-
-        {/* Group icons */}
-        {groups.map((group) => (
-          <Link key={group.id} href={`/dashboard/group/${group.id}`} style={{ textDecoration: 'none' }}>
-            <div
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: isGroupActive(group.id) ? '16px' : '24px',
-                background: isGroupActive(group.id)
-                  ? 'var(--accent-primary)'
-                  : 'var(--bg-tertiary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                fontSize: '18px',
-                fontWeight: 700,
-                color: isGroupActive(group.id) ? 'white' : 'var(--text-secondary)',
-                position: 'relative',
-              }}
-              title={group.name}
-            >
-              {group.icon_url ? (
-                <img src={group.icon_url} alt={group.name} style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: 'inherit',
-                  objectFit: 'cover',
-                }} />
-              ) : (
-                getGroupInitial(group.name)
-              )}
-              {/* Active indicator */}
-              {isGroupActive(group.id) && (
-                <div style={{
-                  position: 'absolute',
-                  left: '-6px',
-                  width: '4px',
-                  height: '36px',
-                  borderRadius: '0 4px 4px 0',
-                  background: 'white',
-                }} />
-              )}
-            </div>
+        {/* Navigation Area */}
+        <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+          <Link href="/dashboard" className={`sidebar-link ${pathname === '/dashboard' ? 'active' : ''}`} style={{ position: 'relative' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Dashboard
           </Link>
-        ))}
 
-        {/* Add Group button */}
-        <div
-          onClick={() => setShowCreateModal(true)}
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '24px',
-            background: 'var(--bg-tertiary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            color: 'var(--accent-success)',
-            fontSize: '24px',
-            fontWeight: 300,
-          }}
-          title="Create Group"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--accent-success)';
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.borderRadius = '16px';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--bg-tertiary)';
-            e.currentTarget.style.color = 'var(--accent-success)';
-            e.currentTarget.style.borderRadius = '24px';
-          }}
-        >
-          +
-        </div>
-
-        {/* Join Group button */}
-        <div
-          onClick={() => setShowJoinModal(true)}
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '24px',
-            background: 'var(--bg-tertiary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            color: 'var(--accent-secondary)',
-            fontSize: '18px',
-          }}
-          title="Join Group"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--accent-secondary)';
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.borderRadius = '16px';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--bg-tertiary)';
-            e.currentTarget.style.color = 'var(--accent-secondary)';
-            e.currentTarget.style.borderRadius = '24px';
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-            <polyline points="10 17 15 12 10 7"/>
-            <line x1="15" y1="12" x2="3" y2="12"/>
-          </svg>
-        </div>
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* User avatar */}
-        <div style={{ position: 'relative' }}>
-          <div
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '24px',
-              background: 'var(--bg-tertiary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              overflow: 'hidden',
-            }}
-            title={user?.display_name || 'Profile'}
-          >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-secondary)' }}>
-                {(user?.display_name || 'U').charAt(0).toUpperCase()}
-              </span>
-            )}
+          <div style={{ margin: '24px 0 8px 12px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '1.5px' }}>
+            YOUR GROUPS
           </div>
 
-          {/* User dropdown */}
-          {showUserMenu && (
-            <div className="glass animate-fade-in" style={{
-              position: 'absolute',
-              bottom: '56px',
-              left: '0',
-              width: '220px',
-              borderRadius: '12px',
-              padding: '8px',
-              zIndex: 100,
-            }}>
-              <div style={{
-                padding: '12px',
-                borderBottom: '1px solid var(--border-subtle)',
-                marginBottom: '4px',
-              }}>
-                <p style={{ fontWeight: 600, fontSize: '14px' }}>{user?.display_name}</p>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{user?.email}</p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: 'var(--accent-danger)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontFamily: 'Inter, sans-serif',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {groups.map((group) => (
+              <Link key={group.id} href={`/dashboard/group/${group.id}`} className={`sidebar-link ${isGroupActive(group.id) ? 'active' : ''}`} style={{ position: 'relative' }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '6px',
+                  background: isGroupActive(group.id) ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: 'white',
+                  flexShrink: 0,
+                  overflow: 'hidden'
+                }}>
+                  {group.icon_url ? (
+                    <img src={group.icon_url} alt={group.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    getGroupInitial(group.name)
+                  )}
+                </div>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {group.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          <div style={{ margin: '24px 0 8px 12px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '1.5px' }}>
+            ACTIONS
+          </div>
+
+          <button onClick={() => setShowCreateModal(true)} className="sidebar-link" style={{ color: 'var(--accent-primary)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create New Group
+          </button>
+          
+          <button onClick={() => setShowJoinModal(true)} className="sidebar-link" style={{ color: 'var(--text-secondary)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Join Group
+          </button>
         </div>
       </div>
 
@@ -315,43 +188,140 @@ export default function DashboardShell({
         overflow: 'hidden',
         background: 'var(--bg-primary)',
         width: '100%',
+        position: 'relative',
       }}>
-        {/* Mobile Header (only visible on small screens) */}
-        <div className="mobile-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button className="hamburger" onClick={() => setIsMobileOpen(true)}>
-              ☰
-            </button>
-            <span style={{ fontWeight: 700, fontSize: '18px' }} className="gradient-text">
-              LetsSplit
-            </span>
-          </div>
-          <div 
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'var(--bg-tertiary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
+        {/* Top Header */}
+        <header className="top-header">
+          {/* Mobile Hamburger */}
+          <button 
+            className="hamburger" 
+            onClick={() => setIsMobileOpen(true)}
+            style={{ marginRight: '16px' }}
           >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {(user?.display_name || 'U').charAt(0).toUpperCase()}
-              </span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          {/* Dynamic Breadcrumb (Desktop mainly) */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+             <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: 500 }}>LetsSplit</span>
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+               <polyline points="9 18 15 12 9 6"></polyline>
+             </svg>
+             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>
+               {pathname === '/dashboard' ? 'Overview' : groups.find(g => isGroupActive(g.id))?.name || 'Group'}
+             </span>
+          </div>
+          
+          {/* User Profile */}
+          <div style={{ position: 'relative' }}>
+            <div
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                padding: '6px',
+                borderRadius: '24px',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'var(--gradient-card)',
+                border: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}>
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
+                    {(user?.display_name || 'U').charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'none' /* hidden on very small screens, could use a class */ }}>
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            {/* User Dropdown */}
+            {showUserMenu && (
+              <div className="glass animate-fade-in" style={{
+                position: 'absolute',
+                top: '56px',
+                right: '0',
+                width: '240px',
+                borderRadius: '16px',
+                padding: '8px',
+                zIndex: 100,
+                border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--shadow-lg)',
+              }}>
+                <div style={{
+                  padding: '16px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  marginBottom: '8px',
+                }}>
+                  <p style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>{user?.display_name}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', wordBreak: 'break-all' }}>{user?.email}</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'var(--accent-primary)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(230,0,0,0.1)';
+                    e.currentTarget.style.paddingLeft = '20px';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.paddingLeft = '16px';
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
             )}
           </div>
-        </div>
+        </header>
 
+        {/* Scrollable Content Area */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
+          position: 'relative',
         }}>
           {children}
         </div>
@@ -365,11 +335,7 @@ export default function DashboardShell({
       {showUserMenu && (
         <div
           onClick={() => setShowUserMenu(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-          }}
+          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
         />
       )}
     </div>
