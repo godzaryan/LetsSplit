@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AddExpenseModal from './AddExpenseModal';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import SettleUpModal from './SettleUpModal';
 import MembersPanel from './MembersPanel';
 import ExpenseCard from './ExpenseCard';
@@ -36,18 +37,26 @@ export default function GroupView({
   const [showSettleUp, setShowSettleUp] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
-  const handleDeleteExpense = async (expenseId: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  const handleDeleteExpense = (expenseId: string) => {
+    setExpenseToDelete(expenseId);
+  };
+
+  const executeDeleteExpense = async () => {
+    if (!expenseToDelete) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+      const { error } = await supabase.from('expenses').delete().eq('id', expenseToDelete);
       if (error) throw error;
+      setExpenseToDelete(null);
       router.refresh();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete expense');
+      setExpenseToDelete(null);
+      setErrorAlert(err.message || 'Failed to delete expense');
     } finally {
       setIsDeleting(false);
     }
@@ -372,6 +381,27 @@ export default function GroupView({
           }}
         />
       )}
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        isOpen={!!expenseToDelete}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        type="danger"
+        onConfirm={executeDeleteExpense}
+        onCancel={() => setExpenseToDelete(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!errorAlert}
+        title="Error"
+        message={errorAlert || ''}
+        confirmText="OK"
+        isAlert={true}
+        onConfirm={() => setErrorAlert(null)}
+        onCancel={() => setErrorAlert(null)}
+      />
     </div>
   );
 }

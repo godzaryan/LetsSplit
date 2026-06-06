@@ -136,7 +136,7 @@ CREATE POLICY "gm_update" ON public.group_members
 CREATE POLICY "gm_delete" ON public.group_members
   FOR DELETE USING (
     get_group_role(group_id) IN ('owner', 'admin')
-    AND user_id != auth.uid() -- Can't remove yourself
+    AND (user_id IS NULL OR user_id != auth.uid()) -- Can't remove yourself
   );
 
 -- ============================================
@@ -262,7 +262,7 @@ BEGIN
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.audit_logs (expense_id, group_id, action, changed_by, old_data)
-    VALUES (OLD.id, OLD.group_id, 'deleted', auth.uid(), to_jsonb(OLD));
+    VALUES (NULL, OLD.group_id, 'deleted', auth.uid(), to_jsonb(OLD));
     RETURN OLD;
   END IF;
 END;

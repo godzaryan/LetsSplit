@@ -14,8 +14,8 @@
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, range, x-supabase-api-version, prefer, x-upsert',
-  'Access-Control-Expose-Headers': 'content-range, x-supabase-api-version',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Expose-Headers': '*',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -58,14 +58,12 @@ export default {
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         let location = responseHeaders.get('Location');
         if (location) {
-          // 1. Rewrite direct redirects (e.g. email confirmations)
-          location = location.replace(env.SUPABASE_URL, url.origin);
-          
-          // 2. Rewrite encoded URLs (e.g. redirect_uri in Google OAuth)
-          const encodedSupabase = encodeURIComponent(env.SUPABASE_URL);
-          const encodedProxy = encodeURIComponent(url.origin);
-          location = location.replace(encodedSupabase, encodedProxy);
-
+          // Only rewrite direct redirects (e.g. email confirmations, magic links)
+          // Do NOT rewrite encoded URLs (like redirect_uri for Google OAuth)
+          // because Supabase backend hardcodes its own URL during the token exchange!
+          if (location.startsWith(env.SUPABASE_URL)) {
+             location = location.replace(env.SUPABASE_URL, url.origin);
+          }
           responseHeaders.set('Location', location);
         }
       }

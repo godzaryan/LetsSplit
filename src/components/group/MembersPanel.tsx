@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface MembersPanelProps {
   group: any;
@@ -20,6 +21,8 @@ export default function MembersPanel({
   const [showAddGhost, setShowAddGhost] = useState(false);
   const [ghostName, setGhostName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -53,19 +56,26 @@ export default function MembersPanel({
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
+  const handleRemoveMember = (memberId: string) => {
+    setMemberToRemove(memberId);
+  };
+
+  const executeRemoveMember = async () => {
+    if (!memberToRemove) return;
 
     try {
       const { error } = await supabase
         .from('group_members')
         .delete()
-        .eq('id', memberId);
+        .eq('id', memberToRemove);
 
       if (error) throw error;
+      setMemberToRemove(null);
       router.refresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to remove member:', err);
+      setMemberToRemove(null);
+      setErrorAlert(err.message || 'Failed to remove member');
     }
   };
 
@@ -250,6 +260,27 @@ export default function MembersPanel({
           );
         })}
       </div>
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        isOpen={!!memberToRemove}
+        title="Remove Member"
+        message="Are you sure you want to remove this member from the group?"
+        confirmText="Remove"
+        type="danger"
+        onConfirm={executeRemoveMember}
+        onCancel={() => setMemberToRemove(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!errorAlert}
+        title="Error"
+        message={errorAlert || ''}
+        confirmText="OK"
+        isAlert={true}
+        onConfirm={() => setErrorAlert(null)}
+        onCancel={() => setErrorAlert(null)}
+      />
     </div>
   );
 }

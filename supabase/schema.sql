@@ -173,7 +173,7 @@ CREATE TABLE public.audit_logs (
   expense_id UUID REFERENCES public.expenses(id) ON DELETE SET NULL,
   group_id UUID NOT NULL REFERENCES public.groups(id) ON DELETE CASCADE,
   action TEXT NOT NULL CHECK (action IN ('created', 'updated', 'deleted')),
-  changed_by UUID NOT NULL REFERENCES public.users(id) ON DELETE SET NULL,
+  changed_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
   old_data JSONB,
   new_data JSONB,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
