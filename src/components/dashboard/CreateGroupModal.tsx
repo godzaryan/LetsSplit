@@ -7,6 +7,7 @@ import { useState } from 'react';
 export default function CreateGroupModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [labels, setLabels] = useState('Fixed Expense, Monthly Expense');
   const [currency, setCurrency] = useState('INR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,12 +25,18 @@ export default function CreateGroupModal({ onClose }: { onClose: () => void }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const labelArray = labels
+        .split(',')
+        .map((l: string) => l.trim())
+        .filter((l: string) => l.length > 0);
+
       // Create group
       const { data: group, error: groupError } = await supabase
         .from('groups')
         .insert({
           name: name.trim(),
           description: description.trim() || null,
+          labels: labelArray,
           currency,
           created_by: user.id,
         })
@@ -117,6 +124,24 @@ export default function CreateGroupModal({ onClose }: { onClose: () => void }) {
               maxLength={200}
               id="create-group-description"
             />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+              Default Expense Labels
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g. Rent, Food, Utilities (comma separated)"
+              value={labels}
+              onChange={(e) => setLabels(e.target.value)}
+              maxLength={200}
+              id="create-group-labels"
+            />
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Comma-separated tags for organizing expenses.
+            </p>
           </div>
 
           <div>

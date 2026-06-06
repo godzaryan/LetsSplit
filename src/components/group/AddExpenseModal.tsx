@@ -11,6 +11,7 @@ interface AddExpenseModalProps {
   currencySymbol: string;
   currentMemberId: string;
   initialData?: any;
+  groupLabels: string[];
   onClose: () => void;
 }
 
@@ -23,10 +24,12 @@ export default function AddExpenseModal({
   currencySymbol,
   currentMemberId,
   initialData,
+  groupLabels,
   onClose,
 }: AddExpenseModalProps) {
   const [description, setDescription] = useState(initialData?.description || '');
   const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(initialData?.labels || []);
   const [splitType, setSplitType] = useState<SplitType>(initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -156,6 +159,11 @@ export default function AddExpenseModal({
     e.preventDefault();
     if (!description.trim() || total <= 0) return;
 
+    if (groupLabels && groupLabels.length > 0 && selectedLabels.length === 0) {
+      setError('Please select at least one label for this expense');
+      return;
+    }
+
     if (splitType === 'exact' && !splitMatchesTotal) {
       setError('Split amounts must add up to the total');
       return;
@@ -183,6 +191,7 @@ export default function AddExpenseModal({
           .from('expenses')
           .update({
             description: description.trim(),
+            labels: selectedLabels,
             total_amount: total,
             currency,
             split_type: splitType,
@@ -202,6 +211,7 @@ export default function AddExpenseModal({
           .insert({
             group_id: groupId,
             description: description.trim(),
+            labels: selectedLabels,
             total_amount: total,
             currency,
             split_type: splitType,
@@ -348,6 +358,46 @@ export default function AddExpenseModal({
               />
             </div>
           </div>
+
+          {/* Labels */}
+          {groupLabels && groupLabels.length > 0 && (
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                Labels (Required)
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {groupLabels.map((label) => {
+                  const isSelected = selectedLabels.includes(label);
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedLabels(selectedLabels.filter((l) => l !== label));
+                        } else {
+                          setSelectedLabels([...selectedLabels, label]);
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+                        background: isSelected ? 'rgba(108, 92, 231, 0.1)' : 'transparent',
+                        color: isSelected ? 'var(--accent-primary-light)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Payer(s) */}
           <div>

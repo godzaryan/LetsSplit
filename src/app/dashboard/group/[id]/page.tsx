@@ -52,6 +52,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       total_amount,
       currency,
       split_type,
+      labels,
       date,
       receipt_url,
       created_by,

@@ -86,6 +86,22 @@ export default function ExpenseCard({
             }}>
               {expense.description}
             </p>
+            {expense.labels && expense.labels.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                {expense.labels.map((label: string) => (
+                  <span key={label} style={{
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    #{label}
+                  </span>
+                ))}
+              </div>
+            )}
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               Paid by <span style={{ color: 'var(--text-secondary)' }}>{payerNames}</span> · {new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
               <span style={{

@@ -39,6 +39,8 @@ export default function GroupView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  const [labelFilter, setLabelFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('date-desc');
   const router = useRouter();
   const supabase = createClient();
 
@@ -160,6 +162,18 @@ export default function GroupView({
     { key: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
+  let processedExpenses = [...expenses];
+  if (labelFilter !== 'All') {
+    processedExpenses = processedExpenses.filter(e => e.labels && e.labels.includes(labelFilter));
+  }
+  processedExpenses.sort((a, b) => {
+    if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (sortBy === 'amount-desc') return b.total_amount - a.total_amount;
+    if (sortBy === 'amount-asc') return a.total_amount - b.total_amount;
+    return 0;
+  });
+
   const handleExport = () => {
     exportToCSV(expenses, settlements, members, group.name, currencySymbol, getMemberName);
   };
@@ -277,20 +291,50 @@ export default function GroupView({
           <div style={{ minHeight: '400px' }}>
             {activeTab === 'expenses' && (
               <div className="animate-fade-in">
-                {expenses.length === 0 ? (
+                {expenses.length > 0 && (
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <select 
+                      className="input-field" 
+                      style={{ flex: 1, minWidth: '150px' }}
+                      value={labelFilter}
+                      onChange={(e) => setLabelFilter(e.target.value)}
+                    >
+                      <option value="All">All Labels</option>
+                      {(group.labels || []).map((l: string) => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                    <select 
+                      className="input-field" 
+                      style={{ flex: 1, minWidth: '150px' }}
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="date-desc">Date (Newest first)</option>
+                      <option value="date-asc">Date (Oldest first)</option>
+                      <option value="amount-desc">Amount (Highest first)</option>
+                      <option value="amount-asc">Amount (Lowest first)</option>
+                    </select>
+                  </div>
+                )}
+                {processedExpenses.length === 0 ? (
                   <div className="card" style={{ textAlign: 'center', padding: '80px 32px' }}>
                     <div style={{ fontSize: '56px', marginBottom: '24px' }}>🧾</div>
-                    <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'white' }}>No expenses yet</h3>
+                    <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'white' }}>
+                      {expenses.length === 0 ? 'No expenses yet' : 'No expenses match filter'}
+                    </h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '32px' }}>
-                      Add your first expense to start tracking who owes what.
+                      {expenses.length === 0 ? 'Add your first expense to start tracking who owes what.' : 'Try changing or removing the label filter.'}
                     </p>
-                    <button className="btn-primary" onClick={() => { setExpenseToEdit(null); setShowAddExpense(true); }} style={{ padding: '12px 24px', fontSize: '15px' }}>
-                      + Add First Expense
-                    </button>
+                    {expenses.length === 0 && (
+                      <button className="btn-primary" onClick={() => { setExpenseToEdit(null); setShowAddExpense(true); }} style={{ padding: '12px 24px', fontSize: '15px' }}>
+                        + Add First Expense
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {expenses.map((expense: any) => (
+                    {processedExpenses.map((expense: any) => (
                       <ExpenseCard
                         key={expense.id}
                         expense={expense}
@@ -362,6 +406,7 @@ export default function GroupView({
           currencySymbol={currencySymbol}
           currentMemberId={currentMemberId}
           initialData={expenseToEdit}
+          groupLabels={group.labels || []}
           onClose={() => {
             setShowAddExpense(false);
             setExpenseToEdit(null);
@@ -485,6 +530,10 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
         </div>
       </div>
 
+      {currentRole === 'owner' && (
+        <GroupLabelsEditor group={group} />
+      )}
+
       {currentRole !== 'owner' && (
         <div className="card" style={{ borderColor: 'rgba(255,107,107,0.2)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '8px', color: 'var(--accent-danger)' }}>
@@ -497,6 +546,71 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function GroupLabelsEditor({ group }: { group: any }) {
+  const [labelsText, setLabelsText] = useState(group.labels ? group.labels.join(', ') : '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const supabase = createClient();
+  const router = useRouter();
+
+  const handleSaveLabels = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    
+    const labelArray = labelsText
+      .split(',')
+      .map((l: string) => l.trim())
+      .filter((l: string) => l.length > 0);
+
+    const { error } = await supabase
+      .from('groups')
+      .update({ labels: labelArray })
+      .eq('id', group.id);
+
+    setIsSaving(false);
+    if (error) {
+      setSaveMessage('Error saving labels');
+    } else {
+      setSaveMessage('Labels updated!');
+      router.refresh();
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: '16px' }}>
+      <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>Group Expense Labels</h3>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
+        Customize the labels available for tagging expenses in this group (comma separated).
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <input
+          type="text"
+          className="input-field"
+          value={labelsText}
+          onChange={(e) => setLabelsText(e.target.value)}
+          placeholder="e.g. Rent, Groceries, Trip"
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
+          {saveMessage && (
+            <span style={{ fontSize: '13px', color: saveMessage.includes('Error') ? 'var(--accent-danger)' : 'var(--accent-success)' }}>
+              {saveMessage}
+            </span>
+          )}
+          <button
+            className="btn-primary"
+            onClick={handleSaveLabels}
+            disabled={isSaving}
+            style={{ padding: '8px 16px', fontSize: '13px' }}
+          >
+            {isSaving ? 'Saving...' : 'Save Labels'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
