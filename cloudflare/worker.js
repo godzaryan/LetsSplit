@@ -45,7 +45,7 @@ export default {
         body: request.method !== 'GET' && request.method !== 'HEAD'
           ? request.body
           : undefined,
-        redirect: 'follow',
+        redirect: 'manual',
       });
 
       // Clone response and add CORS headers
@@ -53,6 +53,22 @@ export default {
       Object.entries(CORS_HEADERS).forEach(([key, value]) => {
         responseHeaders.set(key, value);
       });
+
+      // Rewrite Location header to keep traffic on the proxy
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        let location = responseHeaders.get('Location');
+        if (location) {
+          // 1. Rewrite direct redirects (e.g. email confirmations)
+          location = location.replace(env.SUPABASE_URL, url.origin);
+          
+          // 2. Rewrite encoded URLs (e.g. redirect_uri in Google OAuth)
+          const encodedSupabase = encodeURIComponent(env.SUPABASE_URL);
+          const encodedProxy = encodeURIComponent(url.origin);
+          location = location.replace(encodedSupabase, encodedProxy);
+
+          responseHeaders.set('Location', location);
+        }
+      }
 
       return new Response(response.body, {
         status: response.status,
