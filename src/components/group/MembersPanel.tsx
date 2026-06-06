@@ -155,6 +155,7 @@ export default function MembersPanel({
               display: 'flex',
               alignItems: 'center',
               gap: '14px',
+              flexWrap: 'wrap',
             }}>
               {/* Avatar */}
               <div style={{

@@ -252,15 +252,16 @@ export default function GroupView({
 
       <div className="dashboard-grid">
         {/* Left Column (Main Content) */}
-        <div>
+        <div style={{ minWidth: 0, width: '100%' }}>
           {/* Tabs */}
-          <div style={{ 
+          <div className="hide-scrollbar" style={{ 
             display: 'flex', 
             gap: '8px', 
             marginBottom: '24px', 
             borderBottom: '1px solid var(--border-subtle)', 
             paddingBottom: '12px',
             overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}>
@@ -472,6 +473,7 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
+          flexWrap: 'wrap',
         }}>
           <div style={{
             flex: 1,

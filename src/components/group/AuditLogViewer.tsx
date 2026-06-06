@@ -170,9 +170,9 @@ export default function AuditLogViewer({
                     flex: 1,
                     padding: '14px 16px',
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <p style={{ fontSize: '13px', fontWeight: 500 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ flex: '1 1 min-content', minWidth: '150px' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 500, wordBreak: 'break-word' }}>
                           <span style={{ fontWeight: 700 }}>{getChangedByName(log)}</span>
                           {' '}
                           <span style={{ color: actionColors[log.action] }}>
