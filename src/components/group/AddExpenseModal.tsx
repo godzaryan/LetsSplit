@@ -433,7 +433,7 @@ export default function AddExpenseModal({
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: 'var(--text-secondary)' }}>
               Split type
             </label>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {(['equal', 'exact', 'percentage', 'shares'] as SplitType[]).map((type) => (
                 <button
                   key={type}

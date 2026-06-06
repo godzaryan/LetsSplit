@@ -176,8 +176,8 @@ export default function SettleUpModal({
                     border: `1px solid ${settled.has(i) ? 'rgba(0, 184, 148, 0.2)' : 'var(--border-subtle)'}`,
                     opacity: settled.has(i) ? 0.6 : 1,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                      <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '150px' }}>
                         <p style={{ fontSize: '14px', fontWeight: 500 }}>
                           <span style={{ color: 'var(--accent-danger)' }}>{getMemberName(debt.from)}</span>
                           {' → '}
@@ -187,7 +187,7 @@ export default function SettleUpModal({
                           {currencySymbol}{debt.amount.toFixed(2)}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
                         {isAndroid && debt.from === currentMemberId && getMemberUpiId(debt.to) && (
                           <a
                             href={generateUPILink(

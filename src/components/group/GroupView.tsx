@@ -190,7 +190,7 @@ export default function GroupView({
         
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '8px', color: 'white' }}>
+            <h1 style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '8px', color: 'white', wordBreak: 'break-word' }}>
               {group.name}
             </h1>
             {group.description && (
@@ -200,9 +200,10 @@ export default function GroupView({
             {/* Quick stats bar */}
             <div style={{
               display: 'flex',
-              gap: '24px',
+              gap: '12px',
               marginTop: '24px',
               fontSize: '14px',
+              flexWrap: 'wrap',
             }}>
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Total Spend: </span>
@@ -245,7 +246,9 @@ export default function GroupView({
             marginBottom: '24px', 
             borderBottom: '1px solid var(--border-subtle)', 
             paddingBottom: '12px',
-            overflowX: 'auto' 
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           }}>
             {tabs.map((tab) => (
               <button
