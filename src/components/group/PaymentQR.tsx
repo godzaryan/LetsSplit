@@ -74,41 +74,43 @@ export default function PaymentQR({
         </p>
       </div>
 
-      {/* UPI input for QR */}
-      <div style={{ marginBottom: '16px' }}>
-        <label style={{
-          display: 'block',
-          fontSize: '12px',
-          fontWeight: 500,
-          marginBottom: '6px',
-          color: 'var(--text-secondary)',
-        }}>
-          Payee UPI ID (for QR code)
-        </label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            className="input-field"
-            placeholder="user@upi"
-            value={upiId}
-            onChange={(e) => setUpiId(e.target.value)}
-            style={{ flex: 1, fontSize: '13px' }}
-          />
-          <button
-            className="btn-primary"
-            onClick={() => setShowQR(true)}
-            disabled={!upiId.trim()}
-            style={{
-              fontSize: '12px',
-              padding: '8px 14px',
-              opacity: !upiId.trim() ? 0.5 : 1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Generate QR
-          </button>
+      {/* UPI input for QR (only show if not auto-populated) */}
+      {!toUpiId && (
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{
+            display: 'block',
+            fontSize: '12px',
+            fontWeight: 500,
+            marginBottom: '6px',
+            color: 'var(--text-secondary)',
+          }}>
+            Payee UPI ID (for QR code)
+          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="user@upi"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              style={{ flex: 1, fontSize: '13px' }}
+            />
+            <button
+              className="btn-primary"
+              onClick={() => setShowQR(true)}
+              disabled={!upiId.trim()}
+              style={{
+                fontSize: '12px',
+                padding: '8px 14px',
+                opacity: !upiId.trim() ? 0.5 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Generate QR
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* QR Code display */}
       {showQR && upiLink && (
