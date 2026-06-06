@@ -105,14 +105,24 @@ CREATE POLICY "groups_delete" ON public.groups
 CREATE POLICY "gm_select" ON public.group_members
   FOR SELECT USING (is_group_member(group_id));
 
--- Owner/Admin can add members; users can join themselves via invite
+-- Owner/Admin can add members; users can join themselves via invite; group creator can add themselves as owner
 CREATE POLICY "gm_insert" ON public.group_members
   FOR INSERT WITH CHECK (
     -- Owner/Admin adding someone
     get_group_role(group_id) IN ('owner', 'admin')
     OR
-    -- User joining themselves (role must be 'member')
+    -- User joining themselves via invite (role must be 'member')
     (user_id = auth.uid() AND role = 'member')
+    OR
+    -- Creator of the group adding themselves as owner during group creation
+    (
+      EXISTS (
+        SELECT 1 FROM public.groups
+        WHERE id = group_id AND created_by = auth.uid()
+      )
+      AND user_id = auth.uid()
+      AND role = 'owner'
+    )
   );
 
 CREATE POLICY "gm_update" ON public.group_members
