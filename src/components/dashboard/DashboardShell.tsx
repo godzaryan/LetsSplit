@@ -14,6 +14,7 @@ interface Group {
   icon_url: string | null;
   currency: string;
   role: string;
+  status: string;
   memberId: string;
 }
 
@@ -150,30 +151,64 @@ export default function DashboardShell({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {groups.map((group) => (
-              <Link key={group.id} href={`/dashboard/group/${group.id}`} className={`sidebar-link ${isGroupActive(group.id) ? 'active' : ''}`} style={{ position: 'relative' }}>
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '6px',
-                  background: isGroupActive(group.id) ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+              <Link 
+                key={group.id} 
+                href={group.status === 'pending' ? '#' : `/dashboard/group/${group.id}`} 
+                className={`sidebar-link ${isGroupActive(group.id) ? 'active' : ''}`} 
+                style={{ 
+                  position: 'relative',
+                  opacity: group.status === 'pending' ? 0.5 : 1,
+                  cursor: group.status === 'pending' ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: 'white',
-                  flexShrink: 0,
-                  overflow: 'hidden'
-                }}>
-                  {group.icon_url ? (
-                    <img src={group.icon_url} alt={group.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    getGroupInitial(group.name)
-                  )}
+                  justifyContent: 'space-between'
+                }}
+                onClick={(e) => {
+                  if (group.status === 'pending') {
+                    e.preventDefault();
+                  }
+                }}
+                title={group.status === 'pending' ? 'Pending Approval' : group.name}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '6px',
+                    background: isGroupActive(group.id) ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'white',
+                    flexShrink: 0,
+                    overflow: 'hidden'
+                  }}>
+                    {group.icon_url ? (
+                      <img src={group.icon_url} alt={group.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      getGroupInitial(group.name)
+                    )}
+                  </div>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {group.name}
+                  </span>
                 </div>
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {group.name}
-                </span>
+                {group.status === 'pending' && (
+                  <span style={{ 
+                    fontSize: '9px', 
+                    fontWeight: 700, 
+                    padding: '2px 6px', 
+                    background: 'rgba(255, 170, 0, 0.2)', 
+                    color: 'var(--accent-warning)', 
+                    borderRadius: '4px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Pending
+                  </span>
+                )}
               </Link>
             ))}
           </div>

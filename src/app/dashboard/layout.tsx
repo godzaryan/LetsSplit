@@ -20,6 +20,7 @@ export default async function DashboardLayout({
     .select(`
       id,
       role,
+      status,
       groups (
         id,
         name,
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
     icon_url: m.groups.icon_url,
     currency: m.groups.currency,
     role: m.role,
+    status: m.status,
     memberId: m.id,
   })) || [];
 

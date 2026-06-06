@@ -68,6 +68,7 @@ CREATE TABLE public.group_members (
   is_ghost BOOLEAN DEFAULT false NOT NULL,
   ghost_name TEXT,
   role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
   added_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
   joined_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   -- Ghost must have a name, real user must have user_id

@@ -79,6 +79,39 @@ export default function MembersPanel({
     }
   };
 
+  const handleApproveMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .update({ status: 'approved' })
+        .eq('id', memberId);
+
+      if (error) throw error;
+      router.refresh();
+    } catch (err: any) {
+      console.error('Failed to approve member:', err);
+      setErrorAlert(err.message || 'Failed to approve member');
+    }
+  };
+
+  const handleRejectMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+      router.refresh();
+    } catch (err: any) {
+      console.error('Failed to reject member:', err);
+      setErrorAlert(err.message || 'Failed to reject member');
+    }
+  };
+
+  const approvedMembers = members.filter(m => m.status === 'approved' || m.status === undefined);
+  const pendingMembers = members.filter(m => m.status === 'pending');
+
   const roleColors: Record<string, string> = {
     owner: '#ffaa00',
     admin: 'var(--accent-primary-light)',
@@ -138,9 +171,63 @@ export default function MembersPanel({
         </form>
       )}
 
+      {/* Pending Requests Section (Only visible to managers) */}
+      {canManage && pendingMembers.length > 0 && (
+        <div style={{ marginBottom: '32px' }}>
+          <h4 style={{ fontWeight: 700, fontSize: '13px', color: 'var(--accent-warning)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Pending Requests ({pendingMembers.length})
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {pendingMembers.map((member) => {
+              const name = member.users?.display_name || member.users?.email?.split('@')[0] || 'Unknown';
+              const email = member.users?.email;
+              return (
+                <div key={member.id} style={{
+                  padding: '14px 18px',
+                  background: 'rgba(255, 170, 0, 0.05)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 170, 0, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  flexWrap: 'wrap',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      background: 'rgba(255, 170, 0, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: '16px', color: 'var(--accent-warning)', overflow: 'hidden'
+                    }}>
+                      {member.users?.avatar_url ? (
+                        <img src={member.users.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{name}</div>
+                      {email && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{email}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => handleApproveMember(member.id)} className="btn-primary" style={{ padding: '6px 12px', fontSize: '12px', minHeight: 'auto' }}>
+                      Approve
+                    </button>
+                    <button onClick={() => handleRejectMember(member.id)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', minHeight: 'auto', background: 'rgba(255, 26, 26, 0.1)', color: 'var(--accent-danger)' }}>
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Members list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {members.map((member: any) => {
+        {approvedMembers.map((member: any) => {
           const isGhost = member.is_ghost;
           const name = isGhost ? member.ghost_name : (member.users?.display_name || member.users?.email?.split('@')[0] || 'Unknown');
           const email = isGhost ? null : member.users?.email;

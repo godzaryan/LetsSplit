@@ -27,6 +27,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       is_ghost,
       ghost_name,
       role,
+      status,
       joined_at,
       users!group_members_user_id_fkey (
         id,
@@ -41,6 +42,12 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
 
   if (membersError) {
     console.error('Error fetching members:', membersError);
+  }
+
+  // Check if current user is an approved member
+  const currentUserMember = members?.find(m => m.user_id === user.id);
+  if (!currentUserMember || currentUserMember.status === 'pending') {
+    redirect('/dashboard'); // Deny access to pending users
   }
 
   // Fetch expenses (non-deleted)

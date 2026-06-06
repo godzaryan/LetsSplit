@@ -8,6 +8,7 @@ export default function JoinGroupModal({ onClose }: { onClose: () => void }) {
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -38,33 +39,41 @@ export default function JoinGroupModal({ onClose }: { onClose: () => void }) {
         throw new Error('This invite code has expired.');
       }
 
-      // Check if already a member
+      // Check if already a member or pending
       const { data: existing } = await supabase
         .from('group_members')
-        .select('id')
+        .select('id, status')
         .eq('group_id', group.id)
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (existing) {
+        if (existing.status === 'pending') {
+          throw new Error('Your request to join is already pending approval.');
+        }
         throw new Error('You are already a member of this group!');
       }
 
-      // Join the group
+      // Join the group as pending
       const { error: joinError } = await supabase
         .from('group_members')
         .insert({
           group_id: group.id,
           user_id: user.id,
           role: 'member',
+          status: 'pending',
           added_by: user.id,
         });
 
       if (joinError) throw joinError;
 
-      onClose();
-      router.push(`/dashboard/group/${group.id}`);
+      setSuccess(true);
       router.refresh();
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        onClose();
+      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to join group');
       setLoading(false);
@@ -120,6 +129,19 @@ export default function JoinGroupModal({ onClose }: { onClose: () => void }) {
               id="join-group-code"
             />
           </div>
+
+          {success && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: 'rgba(0, 204, 102, 0.1)',
+              border: '1px solid rgba(0, 204, 102, 0.2)',
+              color: 'var(--accent-success)',
+              fontSize: '13px',
+            }}>
+              Request sent! Waiting for owner approval.
+            </div>
+          )}
 
           {error && (
             <div style={{

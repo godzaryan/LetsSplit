@@ -15,6 +15,7 @@ RETURNS BOOLEAN AS $$
     WHERE group_id = g_id
       AND user_id = auth.uid()
       AND is_ghost = false
+      AND status = 'approved'
   );
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
@@ -25,6 +26,7 @@ RETURNS TEXT AS $$
   WHERE group_id = g_id
     AND user_id = auth.uid()
     AND is_ghost = false
+    AND status = 'approved'
   LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
@@ -35,6 +37,7 @@ RETURNS UUID AS $$
   WHERE group_id = g_id
     AND user_id = auth.uid()
     AND is_ghost = false
+    AND status = 'approved'
   LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
@@ -80,7 +83,14 @@ CREATE POLICY "users_update_own" ON public.users
 -- GROUPS POLICIES
 -- ============================================
 CREATE POLICY "groups_select_member" ON public.groups
-  FOR SELECT USING (is_group_member(id));
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.group_members
+      WHERE group_id = id
+        AND user_id = auth.uid()
+        AND is_ghost = false
+    )
+  );
 
 -- Allow reading group by invite code (for joining)
 CREATE POLICY "groups_select_by_invite" ON public.groups
@@ -103,7 +113,11 @@ CREATE POLICY "groups_delete" ON public.groups
 -- GROUP MEMBERS POLICIES
 -- ============================================
 CREATE POLICY "gm_select" ON public.group_members
-  FOR SELECT USING (is_group_member(group_id));
+  FOR SELECT USING (
+    is_group_member(group_id)
+    OR
+    user_id = auth.uid()
+  );
 
 -- Owner/Admin can add members; users can join themselves via invite; group creator can add themselves as owner
 CREATE POLICY "gm_insert" ON public.group_members
@@ -111,8 +125,8 @@ CREATE POLICY "gm_insert" ON public.group_members
     -- Owner/Admin adding someone
     get_group_role(group_id) IN ('owner', 'admin')
     OR
-    -- User joining themselves via invite (role must be 'member')
-    (user_id = auth.uid() AND role = 'member')
+    -- User joining themselves via invite (role must be 'member', status must be 'pending')
+    (user_id = auth.uid() AND role = 'member' AND status = 'pending')
     OR
     -- Creator of the group adding themselves as owner during group creation
     (
@@ -122,6 +136,7 @@ CREATE POLICY "gm_insert" ON public.group_members
       )
       AND user_id = auth.uid()
       AND role = 'owner'
+      AND status = 'approved'
     )
   );
 
