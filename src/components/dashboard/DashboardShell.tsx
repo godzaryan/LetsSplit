@@ -41,9 +41,14 @@ export default function DashboardShell({
   const supabase = createClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    } finally {
+      // Force a full page reload to clear all Next.js client-side caches
+      window.location.href = '/';
+    }
   };
 
   const getGroupInitial = (name: string) => {
