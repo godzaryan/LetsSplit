@@ -1,7 +1,8 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { generateUPILink } from '@/lib/payments';
 import PaymentQR from './PaymentQR';
 
 interface SettleUpModalProps {
@@ -38,7 +39,12 @@ export default function SettleUpModal({
   const [error, setError] = useState('');
   const [settled, setSettled] = useState<Set<number>>(new Set());
   const [showQRIndex, setShowQRIndex] = useState<number | null>(null);
+  const [isAndroid, setIsAndroid] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    setIsAndroid(/Android/i.test(navigator.userAgent));
+  }, []);
 
   const handleSettleSuggested = async (debt: { from: string; to: string; amount: number }, index: number) => {
     setLoading(true);
@@ -182,6 +188,28 @@ export default function SettleUpModal({
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
+                        {isAndroid && debt.from === currentMemberId && getMemberUpiId(debt.to) && (
+                          <a
+                            href={generateUPILink(
+                              getMemberName(debt.to),
+                              getMemberUpiId(debt.to),
+                              debt.amount,
+                              `LetsSplit: Settlement to ${getMemberName(debt.to)}`
+                            )}
+                            className="btn-primary"
+                            style={{
+                              fontSize: '11px',
+                              padding: '6px 10px',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              background: 'var(--accent-success)',
+                              color: '#fff',
+                            }}
+                          >
+                            🚀 Pay Now
+                          </a>
+                        )}
                         <button
                           className="btn-secondary"
                           onClick={() => setShowQRIndex(showQRIndex === i ? null : i)}
