@@ -25,6 +25,10 @@ export default function SettleUpModal({
   groupName = 'Group',
   onClose,
 }: SettleUpModalProps) {
+  const getMemberUpiId = (id: string) => {
+    const member = members.find(m => m.id === id);
+    return member?.users?.upi_id || '';
+  };
   const [mode, setMode] = useState<'suggested' | 'custom'>('suggested');
   const [fromMember, setFromMember] = useState(currentMemberId);
   const [toMember, setToMember] = useState('');
@@ -205,6 +209,7 @@ export default function SettleUpModal({
                         <PaymentQR
                           fromName={getMemberName(debt.from)}
                           toName={getMemberName(debt.to)}
+                          toUpiId={getMemberUpiId(debt.to)}
                           amount={debt.amount}
                           currencySymbol={currencySymbol}
                           groupName={groupName}

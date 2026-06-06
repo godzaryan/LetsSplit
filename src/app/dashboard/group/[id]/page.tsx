@@ -32,7 +32,8 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         id,
         display_name,
         email,
-        avatar_url
+        avatar_url,
+        upi_id
       )
     `)
     .eq('group_id', groupId)

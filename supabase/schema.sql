@@ -14,6 +14,7 @@ CREATE TABLE public.users (
   email TEXT,
   display_name TEXT,
   avatar_url TEXT,
+  upi_id TEXT,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );

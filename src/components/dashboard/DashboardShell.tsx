@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import CreateGroupModal from './CreateGroupModal';
 import JoinGroupModal from './JoinGroupModal';
+import UpiPromptModal from './UpiPromptModal';
 
 interface Group {
   id: string;
@@ -21,6 +22,7 @@ interface User {
   email: string;
   display_name: string;
   avatar_url: string | null;
+  upi_id?: string | null;
 }
 
 export default function DashboardShell({
@@ -36,9 +38,16 @@ export default function DashboardShell({
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showUpiPrompt, setShowUpiPrompt] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (user && !user.upi_id) {
+      setShowUpiPrompt(true);
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -353,6 +362,7 @@ export default function DashboardShell({
       {/* Modals */}
       {showCreateModal && <CreateGroupModal onClose={() => setShowCreateModal(false)} />}
       {showJoinModal && <JoinGroupModal onClose={() => setShowJoinModal(false)} />}
+      {showUpiPrompt && user?.id && <UpiPromptModal userId={user.id} onComplete={() => setShowUpiPrompt(false)} />}
     </div>
   );
 }

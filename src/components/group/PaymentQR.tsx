@@ -6,6 +6,7 @@ import { generateQRCodeURL, generateUPILink, generatePaymentText } from '@/lib/p
 interface PaymentQRProps {
   fromName: string;
   toName: string;
+  toUpiId?: string;
   amount: number;
   currencySymbol: string;
   groupName: string;
@@ -14,12 +15,13 @@ interface PaymentQRProps {
 export default function PaymentQR({
   fromName,
   toName,
+  toUpiId,
   amount,
   currencySymbol,
   groupName,
 }: PaymentQRProps) {
-  const [upiId, setUpiId] = useState('');
-  const [showQR, setShowQR] = useState(false);
+  const [upiId, setUpiId] = useState(toUpiId || '');
+  const [showQR, setShowQR] = useState(!!toUpiId);
   const [copied, setCopied] = useState(false);
 
   const paymentNote = `LetsSplit: ${fromName} → ${toName} (${groupName})`;
