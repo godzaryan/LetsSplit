@@ -26,7 +26,6 @@ export default function AddExpenseModal({
   onClose,
 }: AddExpenseModalProps) {
   const [description, setDescription] = useState(initialData?.description || '');
-  const [totalAmount, setTotalAmount] = useState(initialData?.total_amount ? String(initialData.total_amount) : '');
   const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [splitType, setSplitType] = useState<SplitType>(initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
@@ -86,7 +85,7 @@ export default function AddExpenseModal({
 
   const supabase = createClient();
 
-  const total = parseFloat(totalAmount) || 0;
+  const total = Object.values(payers).reduce((s, v) => s + (parseFloat(v) || 0), 0);
 
   // Calculate split preview
   const splitPreview = useMemo(() => {
@@ -134,9 +133,7 @@ export default function AddExpenseModal({
   }, [splitType, total, selectedMembers, members, exactAmounts, percentages, shareValues]);
 
   // Validation
-  const totalPaid = Object.values(payers).reduce((s, v) => s + (parseFloat(v) || 0), 0);
   const totalSplit = Object.values(splitPreview).reduce((s, v) => s + v, 0);
-  const payerMatchesTotal = Math.abs(totalPaid - total) < 0.01;
 
   let splitMatchesTotal = true;
   if (splitType === 'exact') {
@@ -158,19 +155,6 @@ export default function AddExpenseModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim() || total <= 0) return;
-
-    // Auto-fill single payer amount
-    const payerEntries = Object.entries(payers).filter(([, v]) => v !== '' || Object.keys(payers).length === 1);
-    if (Object.keys(payers).length === 1) {
-      const payerId = Object.keys(payers)[0];
-      payers[payerId] = totalAmount;
-    }
-
-    const finalTotalPaid = Object.values(payers).reduce((s, v) => s + (parseFloat(v) || 0), 0);
-    if (Math.abs(finalTotalPaid - total) > 0.01) {
-      setError('Payer amounts must add up to the total');
-      return;
-    }
 
     if (splitType === 'exact' && !splitMatchesTotal) {
       setError('Split amounts must add up to the total');
@@ -337,14 +321,17 @@ export default function AddExpenseModal({
                 Total Amount ({currencySymbol})
               </label>
               <input
-                type="number"
+                type="text"
                 className="input-field"
                 placeholder="0.00"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(e.target.value)}
-                required
-                min="0.01"
-                step="0.01"
+                value={total > 0 ? total.toFixed(2) : ''}
+                readOnly
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  color: 'var(--accent-primary-light)',
+                  fontWeight: 700,
+                  cursor: 'not-allowed'
+                }}
                 id="expense-amount"
               />
             </div>
@@ -387,37 +374,35 @@ export default function AddExpenseModal({
                     </option>
                   ))}
                 </select>
+                <input
+                  type="number"
+                  className="input-field"
+                  placeholder="Amount"
+                  value={amount}
+                  onChange={(e) => setPayers({ ...payers, [memberId]: e.target.value })}
+                  min="0.01"
+                  step="0.01"
+                  style={{ flex: 1 }}
+                />
                 {Object.keys(payers).length > 1 && (
-                  <>
-                    <input
-                      type="number"
-                      className="input-field"
-                      placeholder="Amount"
-                      value={amount}
-                      onChange={(e) => setPayers({ ...payers, [memberId]: e.target.value })}
-                      min="0.01"
-                      step="0.01"
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newPayers = { ...payers };
-                        delete newPayers[memberId];
-                        setPayers(newPayers);
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--accent-danger)',
-                        cursor: 'pointer',
-                        fontSize: '18px',
-                        padding: '0 8px',
-                      }}
-                    >
-                      ×
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPayers = { ...payers };
+                      delete newPayers[memberId];
+                      setPayers(newPayers);
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--accent-danger)',
+                      cursor: 'pointer',
+                      fontSize: '18px',
+                      padding: '0 8px',
+                    }}
+                  >
+                    ×
+                  </button>
                 )}
               </div>
             ))}
