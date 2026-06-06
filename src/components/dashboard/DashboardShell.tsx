@@ -42,7 +42,14 @@ export default function DashboardShell({
 
   const handleSignOut = async () => {
     try {
-      // Call the server-side API route to reliably clear all HTTP cookies
+      // 1. Clear client-side auth state (removes localStorage tokens)
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error clearing client session:', error);
+    }
+
+    try {
+      // 2. Call the server-side API route to reliably clear all HTTP cookies
       const response = await fetch('/auth/signout', { method: 'POST' });
       if (response.redirected) {
         window.location.href = response.url;

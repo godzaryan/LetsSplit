@@ -4,20 +4,27 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
+    await supabase.auth.signOut();
     
-    // Check if a user is logged in
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session) {
-      await supabase.auth.signOut();
-    }
-    
-    // Redirect to the home page after clearing cookies
+    // Create the redirect response
     const url = new URL('/', request.url);
-    return NextResponse.redirect(url, { status: 302 });
+    const response = NextResponse.redirect(url, { status: 302 });
+    
+    // Explicitly delete all Supabase auth cookies as a fallback guarantee
+    const allCookies = request.headers.get('cookie');
+    if (allCookies) {
+      const cookieArray = allCookies.split(';');
+      cookieArray.forEach((cookie) => {
+        const cookieName = cookie.split('=')[0].trim();
+        if (cookieName.startsWith('sb-')) {
+          response.cookies.delete(cookieName);
+        }
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('Error during server-side sign out:', error);
-    // Still redirect on error to ensure we leave the dashboard
     const url = new URL('/', request.url);
     return NextResponse.redirect(url, { status: 302 });
   }
