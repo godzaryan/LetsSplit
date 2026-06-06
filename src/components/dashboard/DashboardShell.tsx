@@ -42,11 +42,15 @@ export default function DashboardShell({
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Call the server-side API route to reliably clear all HTTP cookies
+      const response = await fetch('/auth/signout', { method: 'POST' });
+      if (response.redirected) {
+        window.location.href = response.url;
+      } else {
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Error during sign out:', error);
-    } finally {
-      // Force a full page reload to clear all Next.js client-side caches
       window.location.href = '/';
     }
   };
