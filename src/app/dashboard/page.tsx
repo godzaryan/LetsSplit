@@ -7,14 +7,15 @@ export default async function DashboardPage() {
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
-    <div style={{ padding: '32px', maxWidth: '900px' }}>
+    <div className="page-container">
       {/* Welcome header */}
       <div className="animate-fade-in" style={{ marginBottom: '40px' }}>
         <h1 style={{
-          fontSize: '28px',
+          fontSize: '32px',
           fontWeight: 800,
-          letterSpacing: '-0.5px',
+          letterSpacing: '-1px',
           marginBottom: '8px',
+          color: 'var(--text-primary)'
         }}>
           Welcome back, <span className="gradient-text">{displayName}</span> 👋
         </h1>
@@ -23,82 +24,142 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px',
-        marginBottom: '32px',
-      }}>
-        {[
-          { label: 'Total Groups', value: '0', icon: '👥', color: '#6c5ce7' },
-          { label: 'You Owe', value: '₹0.00', icon: '📤', color: '#ff6b6b' },
-          { label: 'You\'re Owed', value: '₹0.00', icon: '📥', color: '#00b894' },
-          { label: 'This Month', value: '₹0.00', icon: '📊', color: '#00cec9' },
-        ].map((stat, i) => (
-          <div key={i} className="card animate-fade-in" style={{
-            animationDelay: `${i * 80}ms`,
+      <div className="dashboard-grid">
+        {/* Left Column (Main Stats & Actions) */}
+        <div>
+          {/* Quick Stats */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '32px',
+          }}>
+            {[
+              { label: 'Total Groups', value: '0', icon: '👥', color: 'var(--accent-primary-light)' },
+              { label: 'You Owe', value: '₹0.00', icon: '📤', color: 'var(--accent-danger)' },
+              { label: 'You\'re Owed', value: '₹0.00', icon: '📥', color: 'var(--accent-success)' },
+              { label: 'This Month', value: '₹0.00', icon: '📊', color: 'var(--accent-warning)' },
+            ].map((stat, i) => (
+              <div key={i} className="card animate-fade-in" style={{
+                animationDelay: `${i * 80}ms`,
+                animationFillMode: 'both',
+                padding: '20px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {stat.label}
+                    </p>
+                    <p style={{ fontSize: '24px', fontWeight: 800, color: stat.color }}>
+                      {stat.value}
+                    </p>
+                  </div>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    color: stat.color,
+                  }}>
+                    {stat.icon}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Empty state / Main Action Area */}
+          <div className="card animate-fade-in" style={{
+            textAlign: 'center',
+            padding: '60px 32px',
+            animationDelay: '300ms',
             animationFillMode: 'both',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {stat.label}
-                </p>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: stat.color }}>
-                  {stat.value}
-                </p>
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: `${stat.color}15`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-              }}>
-                {stat.icon}
-              </div>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'rgba(230, 0, 0, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '36px',
+              margin: '0 auto 20px',
+              boxShadow: '0 0 30px rgba(230, 0, 0, 0.2)',
+            }}>
+              🚀
+            </div>
+            <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'var(--text-primary)' }}>
+              Get started with LetsSplit
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '400px', margin: '0 auto 24px', lineHeight: 1.7 }}>
+              Create your first group or join an existing one using an invite code. Start tracking shared expenses effortlessly!
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn-primary" id="create-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
+                + Create Group
+              </button>
+              <button className="btn-secondary" id="join-group-cta" style={{ padding: '12px 24px', fontSize: '15px' }}>
+                Join with Code
+              </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Empty state */}
-      <div className="card animate-fade-in" style={{
-        textAlign: 'center',
-        padding: '60px 32px',
-        animationDelay: '300ms',
-        animationFillMode: 'both',
-      }}>
-        <div style={{
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          background: 'rgba(108, 92, 231, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '36px',
-          margin: '0 auto 20px',
-        }}>
-          🚀
         </div>
-        <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>
-          Get started with LetsSplit
-        </h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '400px', margin: '0 auto 24px', lineHeight: 1.7 }}>
-          Create your first group or join an existing one using an invite code. Start tracking shared expenses effortlessly!
-        </p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button className="btn-primary" id="create-group-cta">
-            + Create Group
-          </button>
-          <button className="btn-secondary" id="join-group-cta">
-            Join with Code
-          </button>
+
+        {/* Right Column (Creative Widgets) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Feature Spotlight Widget */}
+          <div className="card animate-fade-in" style={{ 
+            background: 'var(--gradient-hero)', 
+            border: '1px solid var(--border-active)',
+            padding: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            animationDelay: '400ms',
+          }}>
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'var(--accent-primary)', opacity: 0.2, filter: 'blur(40px)', borderRadius: '50%' }} />
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, padding: '4px 8px', background: 'var(--accent-primary)', color: 'white', borderRadius: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>Coming Soon</span>
+            </div>
+            <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'white', marginBottom: '8px' }}>AI Receipt Scanner</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+              Say goodbye to manual data entry. Simply snap a picture of your dinner receipt, and LetsSplit will automatically detect the items and split them among your friends.
+            </p>
+            <button className="btn-secondary" style={{ width: '100%', fontSize: '13px', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }} disabled>
+              Notify Me When Live
+            </button>
+          </div>
+
+          {/* Recent Activity Placeholder */}
+          <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '500ms' }}>
+            <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '16px' }}>Recent Activity</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.5 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+                  👋
+                </div>
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to LetsSplit!</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Just now</p>
+                </div>
+              </div>
+
+              <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)' }} />
+              
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+                Your activity across all groups will appear here.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
