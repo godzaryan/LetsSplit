@@ -1,5 +1,7 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AddExpenseModal from './AddExpenseModal';
