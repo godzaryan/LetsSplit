@@ -1,5 +1,8 @@
 'use client';
 
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { CheckCircle2 } from 'lucide-react';
+
 interface BalanceSummaryProps {
   members: any[];
   netBalances: Record<string, number>;
@@ -57,7 +60,9 @@ export default function BalanceSummary({
             borderRadius: '16px',
             border: '1px solid rgba(0, 204, 102, 0.15)',
           }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>✅</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: 'var(--accent-success)' }}>
+              <AnimatedIcon animationType="hover-bounce"><CheckCircle2 size={36} color="currentColor" /></AnimatedIcon>
+            </div>
             <p style={{ fontWeight: 700, color: 'var(--accent-success)', fontSize: '15px' }}>All settled up!</p>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               No outstanding debts.

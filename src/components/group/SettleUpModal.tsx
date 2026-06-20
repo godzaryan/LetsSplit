@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { generateUPILink } from '@/lib/payments';
 import PaymentQR from './PaymentQR';
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { Sparkles, Pencil, CheckCircle2, Rocket, QrCode } from 'lucide-react';
 
 interface SettleUpModalProps {
   groupId: string;
@@ -149,7 +151,11 @@ export default function SettleUpModal({
                 textTransform: 'capitalize',
               }}
             >
-              {m === 'suggested' ? '✨ Suggested' : '✏️ Custom'}
+              {m === 'suggested' ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><AnimatedIcon animationType="hover-bounce"><Sparkles size={14} color="currentColor" /></AnimatedIcon> Suggested</span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><AnimatedIcon animationType="hover-bounce"><Pencil size={14} color="currentColor" /></AnimatedIcon> Custom</span>
+              )}
             </button>
           ))}
         </div>
@@ -163,7 +169,9 @@ export default function SettleUpModal({
                 background: 'rgba(0, 184, 148, 0.05)',
                 borderRadius: '12px',
               }}>
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>✅</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', color: 'var(--accent-success)' }}>
+                  <AnimatedIcon animationType="hover-bounce"><CheckCircle2 size={36} color="currentColor" /></AnimatedIcon>
+                </div>
                 <p style={{ fontWeight: 600, color: 'var(--accent-success)' }}>All settled!</p>
               </div>
             ) : (
@@ -205,18 +213,19 @@ export default function SettleUpModal({
                               alignItems: 'center',
                               background: 'var(--accent-success)',
                               color: '#fff',
+                              gap: '4px',
                             }}
                           >
-                            🚀 Pay Now
+                            <AnimatedIcon animationType="hover-bounce"><Rocket size={12} color="currentColor" /></AnimatedIcon> Pay Now
                           </a>
                         )}
                         <button
                           className="btn-secondary"
                           onClick={() => setShowQRIndex(showQRIndex === i ? null : i)}
-                          style={{ fontSize: '11px', padding: '6px 10px' }}
+                          style={{ fontSize: '11px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
                           title="Payment QR"
                         >
-                          💳 QR
+                          <AnimatedIcon animationType="hover-bounce"><QrCode size={12} color="currentColor" /></AnimatedIcon> QR
                         </button>
                         <button
                           className={settled.has(i) ? 'btn-secondary' : 'btn-primary'}

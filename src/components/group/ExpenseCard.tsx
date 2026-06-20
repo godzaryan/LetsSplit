@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { Receipt, Paperclip, Pencil, Trash2 } from 'lucide-react';
 
 interface ExpenseCardProps {
   expense: any;
@@ -67,11 +69,11 @@ export default function ExpenseCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '20px',
+            color: 'var(--text-secondary)',
             flexShrink: 0,
             boxShadow: 'inset 0 0 10px rgba(230,0,0,0.05)',
           }}>
-            🧾
+            <AnimatedIcon animationType="rotate"><Receipt size={24} color="currentColor" /></AnimatedIcon>
           </div>
 
           <div style={{ minWidth: 0 }}>
@@ -208,7 +210,7 @@ export default function ExpenseCard({
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                📎 View Receipt
+                <AnimatedIcon animationType="hover-bounce"><Paperclip size={14} color="currentColor" /></AnimatedIcon> View Receipt
               </a>
             </div>
           )}
@@ -218,14 +220,14 @@ export default function ExpenseCard({
               <button 
                 onClick={(e) => { e.stopPropagation(); onEdit?.(expense); }}
                 className="btn-secondary" 
-                style={{ flex: 1, padding: '8px', fontSize: '13px' }}>
-                ✏️ Edit Expense
+                style={{ flex: 1, padding: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <AnimatedIcon animationType="hover-bounce"><Pencil size={14} color="currentColor" /></AnimatedIcon> Edit Expense
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete?.(expense.id); }}
                 className="btn-secondary" 
-                style={{ flex: 1, padding: '8px', fontSize: '13px', color: 'var(--accent-danger)', borderColor: 'rgba(230,0,0,0.2)' }}>
-                🗑️ Delete
+                style={{ flex: 1, padding: '8px', fontSize: '13px', color: 'var(--accent-danger)', borderColor: 'rgba(230,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <AnimatedIcon animationType="hover-bounce"><Trash2 size={14} color="currentColor" /></AnimatedIcon> Delete
               </button>
             </div>
           )}

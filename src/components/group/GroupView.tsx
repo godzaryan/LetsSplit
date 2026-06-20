@@ -12,6 +12,8 @@ import ExpenseCard from './ExpenseCard';
 import BalanceSummary from './BalanceSummary';
 import AuditLogViewer from './AuditLogViewer';
 import { exportToCSV } from '@/lib/export';
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale } from 'lucide-react';
 
 interface GroupViewProps {
   group: any;
@@ -156,10 +158,10 @@ export default function GroupView({
   const myBalance = netBalances[currentMemberId] || 0;
 
   const tabs = [
-    { key: 'expenses', label: 'Expenses', icon: '📋' },
-    { key: 'members', label: `Members (${members.length})`, icon: '👥' },
-    { key: 'audit', label: 'Audit Log', icon: '📜' },
-    { key: 'settings', label: 'Settings', icon: '⚙️' },
+    { key: 'expenses', label: 'Expenses', icon: <AnimatedIcon animationType="hover-bounce"><ClipboardList size={16} color="currentColor" /></AnimatedIcon> },
+    { key: 'members', label: `Members (${members.length})`, icon: <AnimatedIcon animationType="hover-bounce"><Users size={16} color="currentColor" /></AnimatedIcon> },
+    { key: 'audit', label: 'Audit Log', icon: <AnimatedIcon animationType="hover-bounce"><ScrollText size={16} color="currentColor" /></AnimatedIcon> },
+    { key: 'settings', label: 'Settings', icon: <AnimatedIcon animationType="rotate"><Settings size={16} color="currentColor" /></AnimatedIcon> },
   ];
 
   let processedExpenses = [...expenses];
@@ -237,8 +239,8 @@ export default function GroupView({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button className="btn-secondary" onClick={handleExport} style={{ padding: '10px 16px', fontSize: '14px' }}>
-              📤 Export
+            <button className="btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', fontSize: '14px' }}>
+              <AnimatedIcon animationType="hover-bounce"><Upload size={16} color="currentColor" /></AnimatedIcon> Export
             </button>
             <button className="btn-secondary" onClick={() => setShowSettleUp(true)} style={{ padding: '10px 16px', fontSize: '14px' }}>
               Settle Up
@@ -321,7 +323,9 @@ export default function GroupView({
                 )}
                 {processedExpenses.length === 0 ? (
                   <div className="card" style={{ textAlign: 'center', padding: '80px 32px' }}>
-                    <div style={{ fontSize: '56px', marginBottom: '24px' }}>🧾</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px', color: 'var(--text-secondary)' }}>
+                      <AnimatedIcon animationType="hover-bounce"><Receipt size={56} color="currentColor" /></AnimatedIcon>
+                    </div>
                     <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'white' }}>
                       {expenses.length === 0 ? 'No expenses yet' : 'No expenses match filter'}
                     </h3>
@@ -384,7 +388,7 @@ export default function GroupView({
         <div style={{ position: 'sticky', top: 'calc(var(--header-height) + 32px)' }}>
           <div className="card" style={{ padding: '24px', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ⚖️ Balance Summary
+              <AnimatedIcon animationType="hover-bounce"><Scale size={20} color="currentColor" /></AnimatedIcon> Balance Summary
             </h3>
             <BalanceSummary
               members={members}

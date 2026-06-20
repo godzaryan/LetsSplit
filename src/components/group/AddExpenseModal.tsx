@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { useState, useMemo, useRef } from 'react';
 import { uploadReceipt } from '@/lib/receipts';
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { Paperclip, X } from 'lucide-react';
 
 interface AddExpenseModalProps {
   groupId: string;
@@ -451,7 +453,7 @@ export default function AddExpenseModal({
                       padding: '0 8px',
                     }}
                   >
-                    ×
+                    <AnimatedIcon animationType="hover-bounce"><X size={16} color="currentColor" /></AnimatedIcon>
                   </button>
                 )}
               </div>
@@ -693,9 +695,9 @@ export default function AddExpenseModal({
                 <button
                   type="button"
                   onClick={() => { setReceiptFile(null); setReceiptPreview(null); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', fontSize: '16px' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  ×
+                  <AnimatedIcon animationType="hover-bounce"><X size={16} color="currentColor" /></AnimatedIcon>
                 </button>
               </div>
             ) : (
@@ -714,7 +716,9 @@ export default function AddExpenseModal({
                 onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
                 onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
               >
-                📎 Click to attach a receipt image or PDF
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <AnimatedIcon animationType="hover-bounce"><Paperclip size={16} color="currentColor" /></AnimatedIcon> Click to attach a receipt image or PDF
+                </div>
               </div>
             )}
           </div>

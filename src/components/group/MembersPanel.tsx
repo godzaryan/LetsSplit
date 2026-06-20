@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import AnimatedIcon from '../ui/AnimatedIcon';
+import { UserMinus } from 'lucide-react';
 
 interface MembersPanelProps {
   group: any;
@@ -350,7 +352,7 @@ export default function MembersPanel({
                   }}
                   title="Remove member"
                 >
-                  ×
+                  <AnimatedIcon animationType="hover-bounce"><UserMinus size={16} color="currentColor" /></AnimatedIcon>
                 </button>
               )}
             </div>

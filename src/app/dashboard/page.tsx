@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import AnimatedIcon from '@/components/ui/AnimatedIcon';
+import { Users, Upload, Download, BarChart3, Rocket, Hand } from 'lucide-react';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -121,10 +123,10 @@ export default async function DashboardPage() {
             marginBottom: '32px',
           }}>
             {[
-              { label: 'Total Groups', value: totalGroups.toString(), icon: '👥', color: 'var(--accent-primary-light)' },
-              { label: 'You Owe', value: `${currencySymbol}${globalOwe.toFixed(2)}`, icon: '📤', color: 'var(--accent-danger)' },
-              { label: 'You\'re Owed', value: `${currencySymbol}${globalOwed.toFixed(2)}`, icon: '📥', color: 'var(--accent-success)' },
-              { label: 'This Month', value: `${currencySymbol}${thisMonthSpend.toFixed(2)}`, icon: '📊', color: 'var(--accent-warning)' },
+              { label: 'Total Groups', value: totalGroups.toString(), icon: <AnimatedIcon animationType="hover-bounce"><Users size={20} color="currentColor" /></AnimatedIcon>, color: 'var(--accent-primary-light)' },
+              { label: 'You Owe', value: `${currencySymbol}${globalOwe.toFixed(2)}`, icon: <AnimatedIcon animationType="hover-bounce"><Upload size={20} color="currentColor" /></AnimatedIcon>, color: 'var(--accent-danger)' },
+              { label: 'You\'re Owed', value: `${currencySymbol}${globalOwed.toFixed(2)}`, icon: <AnimatedIcon animationType="hover-bounce"><Download size={20} color="currentColor" /></AnimatedIcon>, color: 'var(--accent-success)' },
+              { label: 'This Month', value: `${currencySymbol}${thisMonthSpend.toFixed(2)}`, icon: <AnimatedIcon animationType="hover-pulse"><BarChart3 size={20} color="currentColor" /></AnimatedIcon>, color: 'var(--accent-warning)' },
             ].map((stat, i) => (
               <div key={i} className="card animate-fade-in" style={{
                 animationDelay: `${i * 80}ms`,
@@ -178,8 +180,9 @@ export default async function DashboardPage() {
                 fontSize: '36px',
                 margin: '0 auto 20px',
                 boxShadow: '0 0 30px rgba(230, 0, 0, 0.2)',
+                color: 'var(--accent-primary)'
               }}>
-                🚀
+                <AnimatedIcon animationType="hover-bounce"><Rocket size={40} color="currentColor" /></AnimatedIcon>
               </div>
               <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px', color: 'var(--text-primary)' }}>
                 Get started with LetsSplit
@@ -274,8 +277,8 @@ export default async function DashboardPage() {
               {recentActivity.length === 0 ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.5 }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                      👋
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                      <AnimatedIcon animationType="rotate"><Hand size={16} color="currentColor" /></AnimatedIcon>
                     </div>
                     <div>
                       <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Welcome to LetsSplit!</p>
