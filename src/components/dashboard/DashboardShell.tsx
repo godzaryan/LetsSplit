@@ -38,9 +38,25 @@ export default function DashboardShell({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [showUpiPrompt, setShowUpiPrompt] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const router = useRouter();
   const supabase = createClient();
 
@@ -80,10 +96,12 @@ export default function DashboardShell({
     return pathname.includes(`/dashboard/group/${groupId}`);
   };
 
-  // Close mobile menu on route change
+  // Close menu on route change for mobile
   useEffect(() => {
-    setIsMobileOpen(false);
-  }, [pathname]);
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  }, [pathname, isMobile]);
 
   return (
     <div style={{
@@ -95,12 +113,12 @@ export default function DashboardShell({
     }}>
       {/* Mobile overlay */}
       <div 
-        className={`mobile-overlay ${isMobileOpen ? 'active' : ''}`} 
-        onClick={() => setIsMobileOpen(false)}
+        className={`mobile-overlay ${isSidebarOpen && isMobile ? 'active' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)}
       />
 
-      {/* New Desktop Sidebar (260px) */}
-      <div className={`sidebar-desktop ${isMobileOpen ? 'open' : ''}`} style={{
+      {/* Desktop & Mobile Sidebar */}
+      <div className={`sidebar-desktop ${isSidebarOpen ? 'open' : 'closed'}`} style={{
         background: 'var(--bg-secondary)',
         display: 'flex',
         flexDirection: 'column',
@@ -248,16 +266,26 @@ export default function DashboardShell({
       }}>
         {/* Top Header */}
         <header className="top-header">
-          {/* Mobile Hamburger */}
+          {/* Responsive Hamburger */}
           <button 
             className="hamburger" 
-            onClick={() => setIsMobileOpen(true)}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             style={{ marginRight: '16px' }}
+            title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
+              {isSidebarOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
             </svg>
           </button>
 
