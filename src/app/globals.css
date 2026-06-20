@@ -497,8 +497,8 @@ input[type="number"] {
   }
 }
 
-/* ========== Responsive: Mobile (≤ 640px) ========== */
-@media (max-width: 640px) {
+/* ========== Responsive: Mobile and Tablet (≤ 1024px) ========== */
+@media (max-width: 1024px) {
   :root {
     --sidebar-width: 0px;
   }
@@ -508,7 +508,7 @@ input[type="number"] {
   }
 
   .hamburger {
-    display: flex;
+    display: flex !important;
   }
 
   .sidebar-desktop {
