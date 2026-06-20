@@ -297,7 +297,7 @@ export default function GroupView({
                   <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     <select 
                       className="input-field" 
-                      style={{ flex: 1, minWidth: '150px' }}
+                      style={{ flex: 1, minWidth: '120px' }}
                       value={labelFilter}
                       onChange={(e) => setLabelFilter(e.target.value)}
                     >
@@ -308,7 +308,7 @@ export default function GroupView({
                     </select>
                     <select 
                       className="input-field" 
-                      style={{ flex: 1, minWidth: '150px' }}
+                      style={{ flex: 1, minWidth: '120px' }}
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                     >

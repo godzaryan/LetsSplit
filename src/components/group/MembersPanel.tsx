@@ -268,7 +268,7 @@ export default function MembersPanel({
 
               {/* Name & email */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                   <span style={{
                     fontWeight: isSelf ? 800 : 600,
                     fontSize: '14px',

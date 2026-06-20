@@ -56,7 +56,7 @@ export default function ExpenseCard({
     >
       {/* Main row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
           {/* Icon */}
           <div style={{
             width: '48px',
