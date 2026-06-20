@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import AnimatedIcon from "@/components/ui/AnimatedIcon";
+import { Zap, RefreshCw, Users, BarChart3, Receipt, Send } from "lucide-react";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -156,32 +158,32 @@ export default async function Home() {
         }}>
           {[
             {
-              icon: '⚡',
+              icon: <AnimatedIcon animationType="hover-bounce"><Zap size={24} /></AnimatedIcon>,
               title: 'Smart Splitting',
               desc: 'Equal, percentage, exact amounts, shares, or itemized receipt — split any way you need.',
             },
             {
-              icon: '🔄',
+              icon: <AnimatedIcon animationType="rotate"><RefreshCw size={24} /></AnimatedIcon>,
               title: 'Debt Simplification',
               desc: 'Our algorithm minimizes the number of transactions needed to settle all group debts.',
             },
             {
-              icon: '👥',
+              icon: <AnimatedIcon animationType="hover-bounce"><Users size={24} /></AnimatedIcon>,
               title: 'Group Management',
               desc: 'Discord-style groups with roles, invite codes, and support for guest members.',
             },
             {
-              icon: '📊',
+              icon: <AnimatedIcon animationType="hover-pulse"><BarChart3 size={24} /></AnimatedIcon>,
               title: 'Real-Time Dashboard',
               desc: 'See who owes whom at a glance, with live updates as expenses are added.',
             },
             {
-              icon: '🧾',
+              icon: <AnimatedIcon animationType="hover-bounce"><Receipt size={24} /></AnimatedIcon>,
               title: 'Receipt Scanning',
               desc: 'Attach receipt images to expenses for transparent, trustworthy records.',
             },
             {
-              icon: '📤',
+              icon: <AnimatedIcon animationType="hover-pulse"><Send size={24} /></AnimatedIcon>,
               title: 'Export & Settle',
               desc: 'Export ledgers to CSV, generate QR payment codes, and track settlements.',
             },

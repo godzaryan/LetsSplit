@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import CreateGroupModal from './CreateGroupModal';
 import JoinGroupModal from './JoinGroupModal';
 import UpiPromptModal from './UpiPromptModal';
+import AnimatedIcon from '@/components/ui/AnimatedIcon';
+import { LayoutDashboard, Plus, LogIn, LogOut, ChevronRight, ChevronDown, Menu, X } from 'lucide-react';
 
 interface Group {
   id: string;
@@ -154,12 +156,7 @@ export default function DashboardShell({
         {/* Navigation Area */}
         <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
           <Link href="/dashboard" className={`sidebar-link ${pathname === '/dashboard' ? 'active' : ''}`} style={{ position: 'relative' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
+            <AnimatedIcon icon={LayoutDashboard} size={20} animationType="hover-bounce" />
             Dashboard
           </Link>
 
@@ -236,19 +233,12 @@ export default function DashboardShell({
           </div>
 
           <button onClick={() => setShowCreateModal(true)} className="sidebar-link" style={{ color: 'var(--accent-primary)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
+            <AnimatedIcon icon={Plus} size={20} animationType="rotate" />
             Create New Group
           </button>
           
           <button onClick={() => setShowJoinModal(true)} className="sidebar-link" style={{ color: 'var(--text-secondary)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-              <polyline points="10 17 15 12 10 7"></polyline>
-              <line x1="15" y1="12" x2="3" y2="12"></line>
-            </svg>
+            <AnimatedIcon icon={LogIn} size={20} animationType="hover-bounce" />
             Join Group
           </button>
         </div>
@@ -273,28 +263,13 @@ export default function DashboardShell({
             style={{ marginRight: '16px' }}
             title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              {isSidebarOpen ? (
-                <>
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </>
-              ) : (
-                <>
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="18" x2="21" y2="18"></line>
-                </>
-              )}
-            </svg>
+            <AnimatedIcon icon={isSidebarOpen ? X : Menu} size={24} animationType="rotate" />
           </button>
 
           {/* Dynamic Breadcrumb (Desktop mainly) */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
              <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: 500 }}>LetsSplit</span>
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-               <polyline points="9 18 15 12 9 6"></polyline>
-             </svg>
+             <AnimatedIcon icon={ChevronRight} size={14} color="var(--text-muted)" animationType="none" />
              <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>
                {pathname === '/dashboard' ? 'Overview' : groups.find(g => isGroupActive(g.id))?.name || 'Group'}
              </span>
@@ -342,9 +317,7 @@ export default function DashboardShell({
                   </span>
                 )}
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'none' /* hidden on very small screens, could use a class */ }}>
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
+              <AnimatedIcon icon={ChevronDown} size={16} color="var(--text-secondary)" className="hidden-on-mobile" animationType="none" />
             </div>
 
             {/* User Dropdown */}
@@ -399,11 +372,7 @@ export default function DashboardShell({
                     e.currentTarget.style.paddingLeft = '16px';
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                  </svg>
+                  <AnimatedIcon icon={LogOut} size={16} animationType="none" />
                   Sign Out
                 </button>
               </div>
