@@ -321,7 +321,7 @@ export default function DashboardShell({
 
             {/* User Dropdown */}
             {showUserMenu && (
-              <div className="glass animate-fade-in" style={{
+              <div className="animate-fade-in" style={{
                 position: 'absolute',
                 top: '56px',
                 right: '0',
@@ -329,28 +329,31 @@ export default function DashboardShell({
                 borderRadius: '16px',
                 padding: '8px',
                 zIndex: 100,
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-lg)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-active)',
+                boxShadow: 'var(--shadow-lg), 0 10px 40px rgba(0,0,0,0.8)',
               }}>
                 <div style={{
                   padding: '16px',
                   borderBottom: '1px solid var(--border-subtle)',
                   marginBottom: '8px',
+                  background: 'rgba(230, 0, 0, 0.05)',
+                  borderRadius: '10px',
                 }}>
-                  <p style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>{user?.display_name}</p>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', wordBreak: 'break-all' }}>{user?.email}</p>
+                  <p style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff', letterSpacing: '0.5px' }}>{user?.display_name}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', wordBreak: 'break-all' }}>{user?.email}</p>
                 </div>
                 <button
                   onClick={handleSignOut}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: 'var(--accent-primary)',
+                    background: 'rgba(230, 0, 0, 0.08)',
+                    border: '1px solid rgba(230, 0, 0, 0.2)',
+                    borderRadius: '10px',
+                    color: 'var(--accent-primary-light)',
                     fontSize: '14px',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
                     textAlign: 'left',
                     fontFamily: 'Inter, sans-serif',
@@ -360,11 +363,11 @@ export default function DashboardShell({
                     gap: '12px',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(230,0,0,0.1)';
+                    e.currentTarget.style.background = 'rgba(230,0,0,0.15)';
                     e.currentTarget.style.paddingLeft = '20px';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.background = 'rgba(230, 0, 0, 0.08)';
                     e.currentTarget.style.paddingLeft = '16px';
                   }}
                 >
