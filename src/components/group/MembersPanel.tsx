@@ -293,7 +293,16 @@ export default function MembersPanel({
                   )}
                 </div>
                 {email && (
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{email}</p>
+                  <p style={{ 
+                    fontSize: '12px', 
+                    color: 'var(--text-muted)', 
+                    marginTop: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {email}
+                  </p>
                 )}
               </div>
 
