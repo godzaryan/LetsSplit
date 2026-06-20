@@ -135,7 +135,7 @@ export default function PaymentQR({
       )}
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         <button
           className="btn-secondary"
           onClick={handleCopy}

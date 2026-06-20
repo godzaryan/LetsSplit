@@ -88,7 +88,7 @@ export default function DashboardShell({
   return (
     <div style={{
       display: 'flex',
-      height: '100vh',
+      flex: 1,
       width: '100%',
       overflow: 'hidden',
       background: 'var(--bg-primary)',
@@ -267,7 +267,7 @@ export default function DashboardShell({
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                <polyline points="9 18 15 12 9 6"></polyline>
              </svg>
-             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>
+             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>
                {pathname === '/dashboard' ? 'Overview' : groups.find(g => isGroupActive(g.id))?.name || 'Group'}
              </span>
           </div>

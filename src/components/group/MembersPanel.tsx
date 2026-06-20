@@ -127,7 +127,7 @@ export default function MembersPanel({
   return (
     <div className="animate-fade-in" style={{ maxWidth: '600px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
         <h3 style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)' }}>
           Members ({members.length})
         </h3>
@@ -135,7 +135,7 @@ export default function MembersPanel({
           <button
             className="btn-secondary"
             onClick={() => setShowAddGhost(!showAddGhost)}
-            style={{ fontSize: '12px', padding: '8px 14px' }}
+            style={{ fontSize: '12px', padding: '8px 14px', whiteSpace: 'nowrap' }}
           >
             + Add Guest
           </button>

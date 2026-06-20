@@ -122,7 +122,7 @@ export default function SettleUpModal({
         maxHeight: '85vh',
         overflowY: 'auto',
         borderRadius: '20px',
-        padding: '28px',
+        padding: '20px',
       }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Settle Up</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
