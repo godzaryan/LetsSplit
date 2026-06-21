@@ -126,17 +126,15 @@ export default function MaidDashboard({
     
     const existing = attendance.find(a => a.date === dateStr);
     try {
-      if (existing) {
-        if (existing.status === 'present') {
-          // Toggle to absent
-          await supabase.from('maid_attendance').update({ status: 'absent', marked_by: currentMemberId }).eq('id', existing.id);
-          setAttendance(attendance.map(a => a.id === existing.id ? { ...a, status: 'absent' } : a));
-        } else {
-          // Toggle to remove (delete)
-          await supabase.from('maid_attendance').delete().eq('id', existing.id);
-          setAttendance(attendance.filter(a => a.id !== existing.id));
-        }
+      if (existing && existing.status === 'present') {
+        // Toggle to remove (absent)
+        await supabase.from('maid_attendance').delete().eq('id', existing.id);
+        setAttendance(attendance.filter(a => a.id !== existing.id));
       } else {
+        // If it was somehow absent in db, delete it first
+        if (existing) {
+           await supabase.from('maid_attendance').delete().eq('id', existing.id);
+        }
         // Toggle to present
         const { data } = await supabase.from('maid_attendance').insert({
           maid_id: maid.id,
@@ -189,9 +187,9 @@ export default function MaidDashboard({
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const dailyRate = maid.monthly_salary / daysInMonth;
     
-    // We only explicitly log 'present' or 'absent'. 
-    // If a day is past and not logged, is it absent? Let's assume explicitly logged 'absent' is absent.
-    const absences = attendance.filter(a => a.status === 'absent').length;
+    // By default, if a day is not marked present, it is considered absent.
+    const presents = attendance.filter(a => a.status === 'present').length;
+    const absences = daysInMonth - presents;
     
     const billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
     const deduction = billableAbsences * dailyRate;
@@ -229,7 +227,7 @@ export default function MaidDashboard({
       days.push({
         day: i,
         dateStr,
-        status: att?.status || 'none'
+        status: att?.status === 'present' ? 'present' : 'absent'
       });
     }
     
@@ -409,18 +407,16 @@ export default function MaidDashboard({
                         gap: '4px'
                       }}
                       className="hover:bg-opacity-80"
-                      title="Click to toggle: Present -> Absent -> Clear"
+                      title="Click to toggle: Present <-> Absent"
                     >
                       <span style={{ fontSize: '14px' }}>{day.day}</span>
-                      {day.status === 'present' && <CheckCircle size={12} />}
-                      {day.status === 'absent' && <XCircle size={12} />}
-                      {day.status === 'none' && <div style={{ width: '12px', height: '12px' }} />}
+                      {day.status === 'present' ? <CheckCircle size={12} /> : <XCircle size={12} />}
                     </button>
                   );
                 })}
               </div>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '16px', textAlign: 'center' }}>
-                Tip: Click a day to toggle between Present, Absent, and Clear.
+                Tip: Click a day to toggle between Present and Absent. All unmarked days default to Absent.
               </p>
             </div>
 
