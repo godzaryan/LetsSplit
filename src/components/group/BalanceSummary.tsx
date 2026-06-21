@@ -74,8 +74,8 @@ export default function BalanceSummary({
               <div key={i} style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '12px 16px',
+                gap: '8px',
+                padding: '12px',
                 background: 'var(--bg-hover)',
                 borderRadius: '12px',
                 border: '1px solid var(--border-subtle)',
@@ -101,7 +101,7 @@ export default function BalanceSummary({
                     fontSize: '13px',
                     color: 'var(--text-primary)',
                     display: 'block',
-                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
                   }}>
                     {getMemberName(debt.from)}
                     {debt.from === currentMemberId && ' (you)'}
@@ -129,7 +129,7 @@ export default function BalanceSummary({
                     fontSize: '13px',
                     color: 'var(--text-primary)',
                     display: 'block',
-                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
                   }}>
                     {getMemberName(debt.to)}
                     {debt.to === currentMemberId && ' (you)'}
@@ -169,7 +169,7 @@ export default function BalanceSummary({
                   fontSize: '13px',
                   fontWeight: member.id === currentMemberId ? 800 : 600,
                   color: member.id === currentMemberId ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
                 }}>
                   {member.is_ghost ? member.ghost_name : member.users?.display_name || 'Unknown'}
                   {member.id === currentMemberId && ' (you)'}
