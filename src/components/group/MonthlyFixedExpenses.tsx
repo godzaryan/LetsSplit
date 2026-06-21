@@ -84,7 +84,7 @@ export default function MonthlyFixedExpenses({
           }}>
             <AnimatedIcon animationType="rotate"><Calendar size={18} color="currentColor" /></AnimatedIcon>
           </div>
-          <h3 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>Fixed Monthly Expenses</h3>
+          <h3 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>Scheduled Expenses</h3>
         </div>
         
         {currentRole === 'owner' && (
@@ -118,7 +118,7 @@ export default function MonthlyFixedExpenses({
       <div style={{ padding: '0 20px 20px 20px' }}>
         {activeForMonth.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '14px' }}>
-            No fixed expenses configured for this month.
+            No scheduled expenses configured for this month.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

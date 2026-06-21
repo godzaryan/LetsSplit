@@ -35,7 +35,7 @@ export default function AddExpenseModal({
 }: AddExpenseModalProps) {
   const [description, setDescription] = useState(recurringTemplate?.name || initialData?.description || '');
   const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : (cycleDateStr || new Date().toISOString().split('T')[0]));
-  const [selectedLabels, setSelectedLabels] = useState<string[]>(initialData?.labels || (recurringTemplate ? ['Fixed Expense'] : []));
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(initialData?.labels || (recurringTemplate ? ['Scheduled Expense'] : []));
   const [splitType, setSplitType] = useState<SplitType>(recurringTemplate?.split_type || initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

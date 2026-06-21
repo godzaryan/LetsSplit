@@ -7,7 +7,7 @@ CREATE TABLE public.recurring_expenses (
   group_id UUID NOT NULL REFERENCES public.groups(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
-  cycle TEXT NOT NULL CHECK (cycle IN ('daily', 'weekly', 'monthly', 'yearly')),
+  cycle TEXT NOT NULL CHECK (cycle IN ('daily', 'weekly', 'monthly', 'yearly', 'one-time')),
   start_date DATE NOT NULL,
   end_date DATE,
   split_type TEXT NOT NULL DEFAULT 'equal' CHECK (split_type IN ('equal', 'exact', 'percentage', 'shares')),

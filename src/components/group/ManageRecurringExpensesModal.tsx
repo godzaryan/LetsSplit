@@ -209,7 +209,7 @@ export default function ManageRecurringExpensesModal({
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 700 }}>
-            {view === 'list' ? 'Manage Fixed Expenses' : editId ? 'Edit Fixed Expense' : 'Add Fixed Expense'}
+            {view === 'list' ? 'Manage Scheduled Expenses' : editId ? 'Edit Scheduled Expense' : 'Add Scheduled Expense'}
           </h2>
           <button onClick={view === 'form' ? () => setView('list') : onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <X size={24} />
@@ -220,7 +220,7 @@ export default function ManageRecurringExpensesModal({
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
               {recurringExpenses.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No fixed expenses configured yet.</p>
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No scheduled expenses configured yet.</p>
               ) : (
                 recurringExpenses.map(re => (
                   <div key={re.id} style={{
@@ -240,7 +240,7 @@ export default function ManageRecurringExpensesModal({
               )}
             </div>
             <button onClick={() => { resetForm(); setView('form'); }} className="btn-primary" style={{ width: '100%', padding: '12px', fontWeight: 600 }}>
-              + Add Fixed Expense
+              + Add Scheduled Expense
             </button>
           </div>
         ) : (
@@ -282,6 +282,7 @@ export default function ManageRecurringExpensesModal({
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
                   <option value="yearly">Yearly</option>
+                  <option value="one-time">One-time</option>
                 </select>
               </div>
             </div>
@@ -360,7 +361,7 @@ export default function ManageRecurringExpensesModal({
             {error && <div style={{ color: 'var(--accent-danger)', fontSize: '13px', padding: '8px', background: 'rgba(255,0,0,0.1)', borderRadius: '8px' }}>{error}</div>}
 
             <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '12px', fontWeight: 600 }}>
-              {loading ? 'Saving...' : 'Save Fixed Expense'}
+              {loading ? 'Saving...' : 'Save Scheduled Expense'}
             </button>
           </form>
         )}
