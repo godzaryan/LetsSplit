@@ -54,6 +54,7 @@ export default function GroupView({
   const [labelFilter, setLabelFilter] = useState('All');
   const [memberFilter, setMemberFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [timeFilter, setTimeFilter] = useState('This Month');
   const [sortBy, setSortBy] = useState('date-desc');
   const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable');
 
@@ -68,6 +69,7 @@ export default function GroupView({
         if (p.labelFilter) setLabelFilter(p.labelFilter);
         if (p.memberFilter) setMemberFilter(p.memberFilter);
         if (p.typeFilter) setTypeFilter(p.typeFilter);
+        if (p.timeFilter) setTimeFilter(p.timeFilter);
         if (p.sortBy) setSortBy(p.sortBy);
         if (p.viewMode) setViewMode(p.viewMode);
       }
@@ -76,9 +78,9 @@ export default function GroupView({
 
   // Save prefs when they change
   useEffect(() => {
-    const prefs = { labelFilter, memberFilter, typeFilter, sortBy, viewMode };
+    const prefs = { labelFilter, memberFilter, typeFilter, timeFilter, sortBy, viewMode };
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-  }, [labelFilter, memberFilter, typeFilter, sortBy, viewMode, PREFS_KEY]);
+  }, [labelFilter, memberFilter, typeFilter, timeFilter, sortBy, viewMode, PREFS_KEY]);
 
   const router = useRouter();
   const supabase = createClient();
@@ -254,6 +256,37 @@ export default function GroupView({
         return paidBy || owes;
       });
     }
+  }
+
+  if (timeFilter !== 'All Time') {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    processedExpenses = processedExpenses.filter(e => {
+      const [yyyy, mm, dd] = e.date.split('-').map(Number);
+      const expDate = new Date(yyyy, mm - 1, dd);
+      const expYear = expDate.getFullYear();
+      const expMonth = expDate.getMonth();
+      
+      if (timeFilter === 'This Month') {
+        return expYear === currentYear && expMonth === currentMonth;
+      } else if (timeFilter === 'Previous Month') {
+        const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return expYear === prevYear && expMonth === prevMonth;
+      } else if (timeFilter === 'Last 4 months') {
+        const fourMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
+        return expDate >= fourMonthsAgo;
+      } else if (timeFilter === 'Last 6 Months') {
+        const sixMonthsAgo = new Date(currentYear, currentMonth - 5, 1);
+        return expDate >= sixMonthsAgo;
+      } else if (timeFilter === 'Last 12 months') {
+        const twelveMonthsAgo = new Date(currentYear, currentMonth - 11, 1);
+        return expDate >= twelveMonthsAgo;
+      }
+      return true;
+    });
   }
 
   processedExpenses.sort((a, b) => {
@@ -455,6 +488,16 @@ export default function GroupView({
                           <option value="Involved">I am involved</option>
                           <option value="You Paid">I paid</option>
                           <option value="You Owe">I owe</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
+                          <option value="All Time">All Time</option>
+                          <option value="This Month">This Month</option>
+                          <option value="Previous Month">Previous Month</option>
+                          <option value="Last 4 months">Last 4 months</option>
+                          <option value="Last 6 Months">Last 6 Months</option>
+                          <option value="Last 12 months">Last 12 months</option>
                         </select>
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
