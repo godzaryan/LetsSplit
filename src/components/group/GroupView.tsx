@@ -305,14 +305,10 @@ export default function GroupView({
                 {/* Recurring Expenses Monthly View */}
                 <MonthlyFixedExpenses
                   recurringExpenses={recurringExpenses}
-                  expenses={expenses}
+                  members={members}
                   currencySymbol={currencySymbol}
                   currentRole={currentRole}
-                  onPay={(template, cycleDateStr) => {
-                    setRecurringToPay({ template, cycleDateStr });
-                    setExpenseToEdit(null);
-                    setShowAddExpense(true);
-                  }}
+                  currentMemberId={currentMemberId}
                   onManage={() => setShowManageRecurring(true)}
                 />
 
@@ -446,7 +442,7 @@ export default function GroupView({
       )}
       {showManageRecurring && (
         <ManageRecurringExpensesModal
-          groupId={group.id}
+          group={group}
           members={members}
           currencySymbol={currencySymbol}
           currentMemberId={currentMemberId}

@@ -1,26 +1,30 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 
 interface MonthlyFixedExpensesProps {
   recurringExpenses: any[];
-  expenses: any[]; // The actual expenses to see if they are paid for this cycle
+  members: any[];
   currencySymbol: string;
   currentRole: string;
-  onPay: (recurringTemplate: any, cycleDateStr: string) => void;
+  currentMemberId: string;
   onManage: () => void;
 }
 
 export default function MonthlyFixedExpenses({
   recurringExpenses,
-  expenses,
+  members,
   currencySymbol,
   currentRole,
-  onPay,
+  currentMemberId,
   onManage
 }: MonthlyFixedExpensesProps) {
+  const [loadingPaymentId, setLoadingPaymentId] = useState<string | null>(null);
+  const supabase = createClient();
+
   // Start with current month
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -29,9 +33,15 @@ export default function MonthlyFixedExpenses({
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
   };
 
+  const getMemberName = (memberId: string) => {
+    const member = members.find((m: any) => m.id === memberId);
+    if (!member) return 'Unknown';
+    if (member.is_ghost) return member.ghost_name;
+    return member.users?.display_name || 'Unknown';
+  };
+
   // Format month string, e.g., "June 2026"
   const monthString = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  // The start of the cycle
   const cycleDateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`;
 
   // Get active recurring expenses for this month
@@ -39,7 +49,6 @@ export default function MonthlyFixedExpenses({
     return recurringExpenses.filter(re => {
       const start = new Date(re.start_date);
       const end = re.end_date ? new Date(re.end_date) : null;
-      // Truncate to month for comparison
       const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
       const endMonth = end ? new Date(end.getFullYear(), end.getMonth(), 1) : null;
 
@@ -49,17 +58,36 @@ export default function MonthlyFixedExpenses({
     });
   }, [recurringExpenses, currentMonth]);
 
-  // Map to find which ones are paid this month
-  // An expense is considered the payment if recurring_expense_id matches AND cycle_date matches cycleDateStr
-  const paidMapping = useMemo(() => {
-    const mapping: Record<string, any> = {};
-    expenses.forEach(ex => {
-      if (ex.recurring_expense_id && ex.cycle_date === cycleDateStr && !ex.is_deleted) {
-        mapping[ex.recurring_expense_id] = ex;
+  const handleTogglePayment = async (re: any, memberId: string, amount: number, isPaid: boolean, paymentId: string | undefined) => {
+    if (currentRole !== 'owner') return;
+    
+    // We use a composite string to identify what's loading
+    const loadKey = `${re.id}-${memberId}`;
+    setLoadingPaymentId(loadKey);
+
+    try {
+      if (isPaid && paymentId) {
+        // Unmark paid
+        await supabase.from('scheduled_expense_payments').delete().eq('id', paymentId);
+        // Optimistically remove from state by finding and mutating the object (since we are in client component, best practice is to let parent reload or mutate array if we pass a callback, but we can do a hard reload or emit an event. For now we will just reload the page to be safe, or we can use router.refresh)
+        window.location.reload(); 
+      } else {
+        // Mark paid
+        await supabase.from('scheduled_expense_payments').insert({
+          recurring_expense_id: re.id,
+          cycle_date: cycleDateStr,
+          member_id: memberId,
+          amount: amount,
+          marked_by: currentMemberId
+        });
+        window.location.reload();
       }
-    });
-    return mapping;
-  }, [expenses, cycleDateStr]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPaymentId(null);
+    }
+  };
 
   if (recurringExpenses.length === 0 && currentRole !== 'owner') {
     return null; // Don't show if empty and not owner
@@ -121,56 +149,106 @@ export default function MonthlyFixedExpenses({
             No scheduled expenses configured for this month.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeForMonth.map(re => {
-              const paidExpense = paidMapping[re.id];
-              const isPaid = !!paidExpense;
+              const payments = re.scheduled_expense_payments || [];
+              const splits = re.recurring_expense_splits || [];
 
               return (
                 <div key={re.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
                   background: 'var(--bg-hover)',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border-subtle)'
+                  borderRadius: '16px',
+                  border: '1px solid var(--border-subtle)',
+                  overflow: 'hidden'
                 }}>
-                  <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
-                    <h4 style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', wordBreak: 'break-word', marginBottom: '2px' }}>
-                      {re.name}
-                    </h4>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      Base: {currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}
-                    </p>
+                  {/* Expense Header */}
+                  <div style={{
+                    padding: '16px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <h4 style={{ fontWeight: 800, fontSize: '15px', color: 'white', wordBreak: 'break-word', marginBottom: '2px' }}>
+                        {re.name}
+                      </h4>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Total: {currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}
+                      </p>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    {isPaid ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--accent-success)' }}>
-                          <CheckCircle2 size={14} /> Paid
-                        </span>
-                        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                          {currencySymbol}{Number(paidExpense.total_amount).toFixed(2)}
-                        </span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: 'var(--accent-warning)' }}>
-                          <Clock size={14} /> Pending
-                        </span>
-                        {currentRole === 'owner' && (
-                          <button
-                            onClick={() => onPay(re, cycleDateStr)}
-                            className="btn-primary"
-                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                          >
-                            Pay / Adjust
-                          </button>
-                        )}
-                      </div>
-                    )}
+                  {/* Checklist */}
+                  <div style={{ padding: '8px 16px' }}>
+                    {splits.map((split: any) => {
+                      // Find if this member paid for this cycle
+                      const paymentRecord = payments.find((p: any) => p.member_id === split.member_id && p.cycle_date === cycleDateStr);
+                      const isPaid = !!paymentRecord;
+                      const isMe = split.member_id === currentMemberId;
+                      const isLoading = loadingPaymentId === `${re.id}-${split.member_id}`;
+
+                      return (
+                        <div key={split.member_id} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 0',
+                          borderBottom: '1px solid var(--border-subtle)',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                              {getMemberName(split.member_id).charAt(0)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: isMe ? 800 : 600, fontSize: '14px', color: isMe ? 'white' : 'var(--text-primary)' }}>
+                                {getMemberName(split.member_id)} {isMe && '(you)'}
+                              </div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                Share: {currencySymbol}{Number(split.amount_owed).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            {currentRole === 'owner' ? (
+                              <button 
+                                onClick={() => handleTogglePayment(re, split.member_id, split.amount_owed, isPaid, paymentRecord?.id)}
+                                disabled={isLoading}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '6px',
+                                  padding: '6px 12px', borderRadius: '8px',
+                                  border: isPaid ? '1px solid rgba(0, 204, 102, 0.3)' : '1px solid var(--border-active)',
+                                  background: isPaid ? 'rgba(0, 204, 102, 0.1)' : 'transparent',
+                                  color: isPaid ? 'var(--accent-success)' : 'var(--text-secondary)',
+                                  cursor: isLoading ? 'wait' : 'pointer',
+                                  fontSize: '13px', fontWeight: 600,
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                {isLoading ? (
+                                  <span style={{ opacity: 0.7 }}>...</span>
+                                ) : isPaid ? (
+                                  <><CheckCircle2 size={16} /> Paid</>
+                                ) : (
+                                  <><Circle size={16} /> Mark Paid</>
+                                )}
+                              </button>
+                            ) : (
+                              <div style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                padding: '6px 12px', borderRadius: '8px',
+                                background: isPaid ? 'rgba(0, 204, 102, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                color: isPaid ? 'var(--accent-success)' : 'var(--text-muted)',
+                                fontSize: '13px', fontWeight: 600
+                              }}>
+                                {isPaid ? <><CheckCircle2 size={16} /> Paid</> : <><Circle size={16} /> Unpaid</>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );

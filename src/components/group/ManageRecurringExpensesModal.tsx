@@ -3,10 +3,10 @@
 import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { X, Plus, Settings } from 'lucide-react';
+import { X, CalendarClock, Settings, Trash2 } from 'lucide-react';
 
 interface ManageRecurringExpensesModalProps {
-  groupId: string;
+  group: any;
   members: any[];
   currencySymbol: string;
   currentMemberId: string;
@@ -18,7 +18,7 @@ type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
 const DEFAULT_EXPENSES = ['Rent', 'Water', 'Cylinder', 'Maid', 'Wifi'];
 
 export default function ManageRecurringExpensesModal({
-  groupId,
+  group,
   members,
   currencySymbol,
   currentMemberId,
@@ -37,15 +37,21 @@ export default function ManageRecurringExpensesModal({
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
   
-  // Split State
+  // Split State (Simplified: Just who is involved and how they split)
   const [splitType, setSplitType] = useState<SplitType>('equal');
-  const [payers, setPayers] = useState<Record<string, string>>({ [currentMemberId]: '' });
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set(members.map((m: any) => m.id)));
   const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
   const [percentages, setPercentages] = useState<Record<string, string>>({});
   const [shareValues, setShareValues] = useState<Record<string, string>>({});
 
   const supabase = createClient();
+
+  // Find unconfigured defaults
+  const removedDefaults = group.removed_defaults || [];
+  const configuredNames = new Set(recurringExpenses.map(r => r.name.toLowerCase()));
+  const unconfiguredDefaults = DEFAULT_EXPENSES.filter(
+    def => !configuredNames.has(def.toLowerCase()) && !removedDefaults.includes(def)
+  );
 
   const getMemberName = (memberId: string) => {
     const member = members.find((m: any) => m.id === memberId);
@@ -54,15 +60,14 @@ export default function ManageRecurringExpensesModal({
     return member.users?.display_name || 'Unknown';
   };
 
-  const resetForm = () => {
+  const resetForm = (presetName: string = '') => {
     setEditId(null);
-    setName('');
+    setName(presetName);
     setAmount('');
     setCycle('monthly');
     setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate('');
     setSplitType('equal');
-    setPayers({ [currentMemberId]: '' });
     setSelectedMembers(new Set(members.map((m: any) => m.id)));
     setExactAmounts({});
     setPercentages({});
@@ -78,10 +83,6 @@ export default function ManageRecurringExpensesModal({
     setStartDate(re.start_date);
     setEndDate(re.end_date || '');
     setSplitType(re.split_type as SplitType);
-
-    const p: Record<string, string> = {};
-    re.recurring_expense_payers?.forEach((payer: any) => p[payer.member_id] = String(payer.amount_paid));
-    setPayers(p);
 
     const s = new Set<string>();
     const ex: Record<string, string> = {};
@@ -114,6 +115,19 @@ export default function ManageRecurringExpensesModal({
     }
   };
 
+  const handleRemoveDefault = async (defName: string) => {
+    setLoading(true);
+    try {
+      const updatedDefaults = [...removedDefaults, defName];
+      await supabase.from('groups').update({ removed_defaults: updatedDefaults }).eq('id', group.id);
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const totalNum = parseFloat(amount);
@@ -134,12 +148,11 @@ export default function ManageRecurringExpensesModal({
         }).eq('id', reId);
         if (updErr) throw updErr;
 
-        await supabase.from('recurring_expense_payers').delete().eq('recurring_expense_id', reId);
         await supabase.from('recurring_expense_splits').delete().eq('recurring_expense_id', reId);
       } else {
         // Insert
         const { data: inserted, error: insErr } = await supabase.from('recurring_expenses').insert({
-          group_id: groupId, name: name.trim(), amount: totalNum, cycle,
+          group_id: group.id, name: name.trim(), amount: totalNum, cycle,
           start_date: startDate, end_date: endDate || null,
           split_type: splitType, created_by: currentMemberId
         }).select().single();
@@ -147,21 +160,7 @@ export default function ManageRecurringExpensesModal({
         reId = inserted.id;
       }
 
-      // Insert Payers
-      const payerRows = Object.entries(payers)
-        .filter(([, v]) => parseFloat(v) > 0)
-        .map(([mId, amt]) => ({
-          recurring_expense_id: reId,
-          member_id: mId,
-          amount_paid: parseFloat(amt)
-        }));
-
-      if (payerRows.length > 0) {
-        const { error: pErr } = await supabase.from('recurring_expense_payers').insert(payerRows);
-        if (pErr) throw pErr;
-      }
-
-      // Insert Splits
+      // Insert Splits (Shares)
       const activeMembers = members.filter(m => selectedMembers.has(m.id));
       const splitRows = activeMembers.map((m: any) => {
         let owed = 0;
@@ -192,7 +191,7 @@ export default function ManageRecurringExpensesModal({
 
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to save recurring expense');
+      setError(err.message || 'Failed to save scheduled expense');
       setLoading(false);
     }
   };
@@ -219,60 +218,69 @@ export default function ManageRecurringExpensesModal({
         {view === 'list' ? (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-              {recurringExpenses.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No scheduled expenses configured yet.</p>
-              ) : (
-                recurringExpenses.map(re => (
-                  <div key={re.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '12px 16px', background: 'var(--bg-hover)', borderRadius: '12px', border: '1px solid var(--border-subtle)'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '14px', color: 'white', wordBreak: 'break-word' }}>{re.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currencySymbol}{re.amount} / {re.cycle}</div>
+              {/* Configured Items */}
+              {recurringExpenses.map(re => (
+                <div key={re.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '16px', background: 'var(--bg-hover)', borderRadius: '16px', border: '1px solid var(--border-active)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(108, 92, 231, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
+                      <CalendarClock size={20} />
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleEdit(re)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
-                      <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--accent-danger)' }}>Remove</button>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '15px', color: 'white', wordBreak: 'break-word' }}>{re.name}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}</div>
                     </div>
                   </div>
-                ))
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => handleEdit(re)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
+                    <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px', color: 'var(--accent-danger)' }}><Trash2 size={16} /></button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Unconfigured Defaults */}
+              {unconfiguredDefaults.map(def => (
+                <div key={def} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '16px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border-subtle)', opacity: 0.8
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                      <Settings size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-secondary)' }}>{def}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--accent-warning)' }}>Pending Configuration</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => { resetForm(def); setView('form'); }} className="btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>Configure</button>
+                    <button onClick={() => handleRemoveDefault(def)} className="btn-secondary" style={{ padding: '6px', color: 'var(--text-muted)' }}><X size={16} /></button>
+                  </div>
+                </div>
+              ))}
+
+              {recurringExpenses.length === 0 && unconfiguredDefaults.length === 0 && (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No scheduled expenses left.</p>
               )}
             </div>
+
             <button onClick={() => { resetForm(); setView('form'); }} className="btn-primary" style={{ width: '100%', padding: '12px', fontWeight: 600 }}>
-              + Add Scheduled Expense
+              + Add Custom Bill
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Quick Defaults */}
-            {!editId && (
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Quick Select</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {DEFAULT_EXPENSES.map(def => (
-                    <button key={def} type="button" onClick={() => setName(def)} style={{
-                      padding: '6px 12px', borderRadius: '16px', fontSize: '12px',
-                      background: name === def ? 'rgba(108, 92, 231, 0.1)' : 'var(--bg-secondary)',
-                      color: name === def ? 'var(--accent-primary-light)' : 'var(--text-secondary)',
-                      border: `1px solid ${name === def ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
-                      cursor: 'pointer'
-                    }}>
-                      {def}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div>
-              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Name</label>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Bill Name</label>
               <input type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Rent" />
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Base Amount ({currencySymbol})</label>
+                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Total Amount ({currencySymbol})</label>
                 <input type="number" className="input-field" value={amount} onChange={(e) => setAmount(e.target.value)} required min="0.01" step="0.01" placeholder="0.00" />
               </div>
               <div style={{ flex: 1 }}>
@@ -298,9 +306,9 @@ export default function ManageRecurringExpensesModal({
               </div>
             </div>
 
-            {/* Split Type (Simplified for space) */}
+            {/* Split Type */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Split Type</label>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>How is this bill split?</label>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {(['equal', 'exact', 'percentage', 'shares'] as SplitType[]).map((type) => (
                   <button key={type} type="button" onClick={() => setSplitType(type)} style={{
@@ -316,29 +324,10 @@ export default function ManageRecurringExpensesModal({
               </div>
             </div>
 
-            {/* Who Pays & Split Configuration (combined for ease) */}
+            {/* Involved Members */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Who pays and split configuration (Default values)</label>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Who contributes to this bill?</label>
               <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', maxHeight: '200px', overflowY: 'auto' }}>
-                <p style={{ fontSize: '12px', color: 'var(--accent-primary-light)', marginBottom: '12px' }}>Specify who pays the base amount and select who owes.</p>
-                {/* Payers Config */}
-                {Object.entries(payers).map(([mId, amt], i) => (
-                  <div key={`payer-${i}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <select className="input-field" style={{ flex: 2, padding: '6px 10px', fontSize: '13px' }} value={mId} onChange={(e) => {
-                      const np = { ...payers }; delete np[mId]; np[e.target.value] = amt; setPayers(np);
-                    }}>
-                      {members.map(m => <option key={m.id} value={m.id} disabled={m.id !== mId && m.id in payers}>{getMemberName(m.id)}</option>)}
-                    </select>
-                    <input type="number" className="input-field" placeholder="Amount Paid" value={amt} onChange={(e) => setPayers({ ...payers, [mId]: e.target.value })} style={{ flex: 1, padding: '6px 10px', fontSize: '13px' }} />
-                  </div>
-                ))}
-                <button type="button" onClick={() => {
-                  const unselected = members.find(m => !(m.id in payers));
-                  if (unselected) setPayers({ ...payers, [unselected.id]: '' });
-                }} style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '16px' }}>+ Add payer</button>
-
-                {/* Split Config */}
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600 }}>Split between:</p>
                 {members.map(m => {
                   const isSel = selectedMembers.has(m.id);
                   return (

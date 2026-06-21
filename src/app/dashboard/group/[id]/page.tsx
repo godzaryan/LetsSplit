@@ -91,7 +91,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     .eq('group_id', groupId)
     .order('settled_at', { ascending: false });
 
-  // Fetch recurring expenses
+  // Fetch recurring/scheduled expenses and their payments
   const { data: recurringExpenses } = await supabase
     .from('recurring_expenses')
     .select(`
@@ -103,17 +103,19 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       end_date,
       split_type,
       is_active,
-      recurring_expense_payers (
-        id,
-        member_id,
-        amount_paid
-      ),
       recurring_expense_splits (
         id,
         member_id,
         amount_owed,
         percentage,
         shares
+      ),
+      scheduled_expense_payments (
+        id,
+        cycle_date,
+        member_id,
+        amount,
+        paid_at
       )
     `)
     .eq('group_id', groupId)
