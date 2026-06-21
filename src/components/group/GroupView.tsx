@@ -394,6 +394,10 @@ export default function GroupView({
                   currentRole={currentRole}
                   currentMemberId={currentMemberId}
                   onManage={() => setShowManageRecurring(true)}
+                  onSettleMonth={(expense, cycleDateStr) => {
+                    setRecurringToPay({ template: expense, cycleDateStr });
+                    setShowAddExpense(true);
+                  }}
                 />
 
                 {/* Advanced Filter Bar */}
@@ -557,9 +561,10 @@ export default function GroupView({
           currencySymbol={currencySymbol}
           currentMemberId={currentMemberId}
           initialData={expenseToEdit}
+          groupLabels={group.labels || []}
+          recurringExpenses={recurringExpenses}
           recurringTemplate={recurringToPay?.template}
           cycleDateStr={recurringToPay?.cycleDateStr}
-          groupLabels={group.labels || []}
           onClose={() => {
             setShowAddExpense(false);
             setExpenseToEdit(null);

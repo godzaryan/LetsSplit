@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Calendar, ChevronLeft, ChevronRight, CheckCircle, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import SettleMonthModal from './SettleMonthModal';
 
 interface MonthlyFixedExpensesProps {
   groupId: string;
@@ -14,6 +13,7 @@ interface MonthlyFixedExpensesProps {
   currentRole: string;
   currentMemberId: string;
   onManage: () => void;
+  onSettleMonth?: (expense: any, cycleDateStr: string) => void;
 }
 
 export default function MonthlyFixedExpenses({
@@ -24,11 +24,10 @@ export default function MonthlyFixedExpenses({
   currencySymbol,
   currentRole,
   currentMemberId,
-  onManage
+  onManage,
+  onSettleMonth
 }: MonthlyFixedExpensesProps) {
   const [expandedExpenses, setExpandedExpenses] = useState<Record<string, boolean>>({});
-  const [settleModalOpen, setSettleModalOpen] = useState(false);
-  const [expenseToSettle, setExpenseToSettle] = useState<any>(null);
 
   // Start with current month
   const today = new Date();
@@ -191,8 +190,7 @@ export default function MonthlyFixedExpenses({
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              setExpenseToSettle(expense);
-                              setSettleModalOpen(true);
+                              if (onSettleMonth) onSettleMonth(expense, cycleDateStr);
                             }}
                             style={{
                               padding: '10px 16px', borderRadius: '8px', border: 'none',
@@ -232,16 +230,6 @@ export default function MonthlyFixedExpenses({
         </div>
       )}
 
-      {/* Settlement Modal */}
-      <SettleMonthModal 
-        isOpen={settleModalOpen}
-        onClose={() => setSettleModalOpen(false)}
-        recurringExpense={expenseToSettle}
-        members={members}
-        currentCycleStr={cycleDateStr}
-        groupId={groupId}
-        currentMemberId={currentMemberId}
-      />
     </div>
   );
 }

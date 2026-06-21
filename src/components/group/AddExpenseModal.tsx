@@ -16,6 +16,7 @@ interface AddExpenseModalProps {
   groupLabels: string[];
   recurringTemplate?: any;
   cycleDateStr?: string;
+  recurringExpenses?: any[];
   onClose: () => void;
 }
 
@@ -39,6 +40,11 @@ export default function AddExpenseModal({
   const [splitType, setSplitType] = useState<SplitType>(recurringTemplate?.split_type || initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const todayDate = new Date();
+  const defaultCycleStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-01`;
+  const [linkedRecurringId, setLinkedRecurringId] = useState<string>(initialData?.recurring_expense_id || recurringTemplate?.id || '');
+  const [linkedCycleDate, setLinkedCycleDate] = useState<string>(initialData?.cycle_date || cycleDateStr || defaultCycleStr);
 
   // Payer state — who paid and how much
   const [payers, setPayers] = useState<Record<string, string>>(() => {
@@ -227,6 +233,8 @@ export default function AddExpenseModal({
             currency,
             split_type: splitType,
             date,
+            recurring_expense_id: linkedRecurringId || null,
+            cycle_date: linkedRecurringId ? linkedCycleDate : null,
           })
           .eq('id', expenseId);
 
@@ -248,8 +256,8 @@ export default function AddExpenseModal({
             split_type: splitType,
             date,
             created_by: currentMemberId,
-            recurring_expense_id: recurringTemplate?.id || null,
-            cycle_date: recurringTemplate ? cycleDateStr : null,
+            recurring_expense_id: linkedRecurringId || null,
+            cycle_date: linkedRecurringId ? linkedCycleDate : null,
           })
           .select()
           .single();
@@ -391,6 +399,41 @@ export default function AddExpenseModal({
               />
             </div>
           </div>
+          
+          {/* Link to Scheduled Expense */}
+          {recurringExpenses && recurringExpenses.length > 0 && (
+            <div style={{ marginTop: '16px', background: 'rgba(108, 92, 231, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-primary)' }}>
+                Link to Scheduled Expense (Optional)
+              </label>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', marginTop: 0 }}>
+                Select a scheduled expense to automatically mark it as paid for this month.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  className="input-field"
+                  value={linkedRecurringId}
+                  onChange={(e) => setLinkedRecurringId(e.target.value)}
+                  style={{ flex: 2, padding: '8px 12px', fontSize: '13px' }}
+                >
+                  <option value="">-- None --</option>
+                  {recurringExpenses.map(re => (
+                    <option key={re.id} value={re.id}>{re.name}</option>
+                  ))}
+                </select>
+                
+                {linkedRecurringId && (
+                  <input
+                    type="month"
+                    className="input-field"
+                    value={linkedCycleDate.substring(0, 7)}
+                    onChange={(e) => setLinkedCycleDate(`${e.target.value}-01`)}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Labels */}
           {groupLabels && groupLabels.length > 0 && (
