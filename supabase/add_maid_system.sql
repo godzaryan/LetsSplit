@@ -51,10 +51,10 @@ CREATE INDEX idx_maid_bonuses_month ON public.maid_bonuses(month);
 -- Maids
 ALTER TABLE public.maids ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view maids in their groups" ON public.maids FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = maids.group_id AND member_id = auth.uid())
+  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = maids.group_id AND user_id = auth.uid())
 );
 CREATE POLICY "Users can manage maids in their groups" ON public.maids FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = maids.group_id AND member_id = auth.uid())
+  EXISTS (SELECT 1 FROM public.group_members WHERE group_id = maids.group_id AND user_id = auth.uid())
 );
 
 -- Maid Attendance
@@ -63,14 +63,14 @@ CREATE POLICY "Users can view maid attendance" ON public.maid_attendance FOR SEL
   EXISTS (
     SELECT 1 FROM public.maids m 
     JOIN public.group_members gm ON m.group_id = gm.group_id 
-    WHERE m.id = maid_attendance.maid_id AND gm.member_id = auth.uid()
+    WHERE m.id = maid_attendance.maid_id AND gm.user_id = auth.uid()
   )
 );
 CREATE POLICY "Users can manage maid attendance" ON public.maid_attendance FOR ALL USING (
   EXISTS (
     SELECT 1 FROM public.maids m 
     JOIN public.group_members gm ON m.group_id = gm.group_id 
-    WHERE m.id = maid_attendance.maid_id AND gm.member_id = auth.uid()
+    WHERE m.id = maid_attendance.maid_id AND gm.user_id = auth.uid()
   )
 );
 
@@ -80,13 +80,13 @@ CREATE POLICY "Users can view maid bonuses" ON public.maid_bonuses FOR SELECT US
   EXISTS (
     SELECT 1 FROM public.maids m 
     JOIN public.group_members gm ON m.group_id = gm.group_id 
-    WHERE m.id = maid_bonuses.maid_id AND gm.member_id = auth.uid()
+    WHERE m.id = maid_bonuses.maid_id AND gm.user_id = auth.uid()
   )
 );
 CREATE POLICY "Users can manage maid bonuses" ON public.maid_bonuses FOR ALL USING (
   EXISTS (
     SELECT 1 FROM public.maids m 
     JOIN public.group_members gm ON m.group_id = gm.group_id 
-    WHERE m.id = maid_bonuses.maid_id AND gm.member_id = auth.uid()
+    WHERE m.id = maid_bonuses.maid_id AND gm.user_id = auth.uid()
   )
 );
