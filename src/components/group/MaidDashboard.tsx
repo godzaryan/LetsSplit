@@ -473,7 +473,6 @@ export default function MaidDashboard({
               <input type="date" className="input-field" value={configJoinedDate} onChange={e => setConfigJoinedDate(e.target.value)} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button className="btn-secondary" onClick={() => { setShowConfig(false); setIsAddingNew(false); }}>Cancel</button>
               {!isAddingNew && maid && (
@@ -482,7 +481,7 @@ export default function MaidDashboard({
                 </button>
               )}
               <button className="btn-primary" onClick={handleSaveConfig}>Save Configuration</button>
-            </div>
+          </div>
         </div>
       )}
 
