@@ -39,7 +39,7 @@ export default function MaidDashboard({
   const [configName, setConfigName] = useState('');
   const [configSalary, setConfigSalary] = useState('');
   const [configHolidays, setConfigHolidays] = useState('');
-  const [configJoinedDate, setConfigJoinedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [configJoinedDate, setConfigJoinedDate] = useState(new Date().toLocaleDateString('en-CA'));
   
   // Bonus Form
   const [bonusAmount, setBonusAmount] = useState('');
@@ -64,8 +64,12 @@ export default function MaidDashboard({
       
       setAllMaids(maidsData || []);
       
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      
+      const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
       
       let relevantMaid = null;
       if (maidsData && maidsData.length > 0) {
@@ -85,7 +89,7 @@ export default function MaidDashboard({
         setConfigName(relevantMaid.name);
         setConfigSalary(relevantMaid.monthly_salary);
         setConfigHolidays(relevantMaid.allowed_holidays_per_month);
-        setConfigJoinedDate(relevantMaid.joined_date || new Date().toISOString().split('T')[0]);
+        setConfigJoinedDate(relevantMaid.joined_date || new Date().toLocaleDateString('en-CA'));
       }
 
       if (relevantMaid) {
@@ -203,7 +207,7 @@ export default function MaidDashboard({
     if (!maid) return;
     if (!confirm('Are you sure you want to disable this Maid? They will be marked as inactive from today, but past history will be preserved.')) return;
     try {
-      const leftDate = new Date().toISOString().split('T')[0];
+      const leftDate = new Date().toLocaleDateString('en-CA');
       await supabase.from('maids').update({ is_active: false, left_date: leftDate }).eq('id', maid.id);
       
       // Auto-deactivate the scheduled expense but keep history
@@ -290,7 +294,10 @@ export default function MaidDashboard({
     
     // Calculate days they were actually employed this month
     let billableDaysInMonth = daysInMonth;
-    const joinedDate = new Date(maid.joined_date);
+    
+    // Parse joined date manually to avoid UTC timezone shifts
+    const [jYear, jMonth, jDay] = maid.joined_date.split('-').map(Number);
+    const joinedDate = new Date(jYear, jMonth - 1, jDay);
     
     if (joinedDate.getFullYear() > currentDate.getFullYear() || 
         (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {
@@ -305,7 +312,8 @@ export default function MaidDashboard({
     }
     
     if (maid.left_date) {
-      const leftDateObj = new Date(maid.left_date);
+      const [lYear, lMonth, lDay] = maid.left_date.split('-').map(Number);
+      const leftDateObj = new Date(lYear, lMonth - 1, lDay);
       if (leftDateObj.getFullYear() < currentDate.getFullYear() || 
           (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() < currentDate.getMonth())) {
         return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
@@ -425,7 +433,7 @@ export default function MaidDashboard({
                 setConfigName('');
                 setConfigSalary('');
                 setConfigHolidays('0');
-                setConfigJoinedDate(new Date().toISOString().split('T')[0]);
+                setConfigJoinedDate(new Date().toLocaleDateString('en-CA'));
                 setShowConfig(true);
              }} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
                + Add New Maid
@@ -550,7 +558,7 @@ export default function MaidDashboard({
                     color = 'rgba(255, 255, 255, 0.1)';
                   }
                   
-                  const isToday = day.dateStr === new Date().toISOString().split('T')[0];
+                  const isToday = day.dateStr === new Date().toLocaleDateString('en-CA');
 
                   return (
                     <button
