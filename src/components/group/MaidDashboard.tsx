@@ -450,12 +450,26 @@ export default function MaidDashboard({
           <span style={{ fontSize: '14px', fontWeight: 600, minWidth: '100px', textAlign: 'center' }}>
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </span>
-          <button 
-            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-          >
-            <ChevronRightIcon />
-          </button>
+          {(() => {
+            const now = new Date();
+            const isCurrentOrFuture = currentDate.getFullYear() > now.getFullYear() || 
+                                     (currentDate.getFullYear() === now.getFullYear() && currentDate.getMonth() >= now.getMonth());
+            
+            return (
+              <button 
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                disabled={isCurrentOrFuture}
+                style={{ 
+                  background: 'none', border: 'none', 
+                  color: isCurrentOrFuture ? 'var(--border-subtle)' : 'var(--text-secondary)', 
+                  cursor: isCurrentOrFuture ? 'not-allowed' : 'pointer', 
+                  display: 'flex', padding: '4px' 
+                }}
+              >
+                <ChevronRightIcon />
+              </button>
+            );
+          })()}
           </div>
         </div>
       </div>
