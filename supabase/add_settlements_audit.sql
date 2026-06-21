@@ -7,13 +7,13 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     -- For settlements, we don't have an expense_id, but audit_logs schema allows null expense_id.
-    -- We can log 'settlement_created' in the action column.
+    -- We log 'created' to satisfy the CHECK constraint on action.
     INSERT INTO public.audit_logs (expense_id, group_id, action, changed_by, new_data)
-    VALUES (NULL, NEW.group_id, 'settlement_created', auth.uid(), to_jsonb(NEW));
+    VALUES (NULL, NEW.group_id, 'created', auth.uid(), to_jsonb(NEW));
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
     INSERT INTO public.audit_logs (expense_id, group_id, action, changed_by, old_data)
-    VALUES (NULL, OLD.group_id, 'settlement_deleted', auth.uid(), to_jsonb(OLD));
+    VALUES (NULL, OLD.group_id, 'deleted', auth.uid(), to_jsonb(OLD));
     RETURN OLD;
   END IF;
   RETURN NULL;

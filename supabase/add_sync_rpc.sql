@@ -1,8 +1,6 @@
 -- ============================================
--- RPC: Sync Scheduled Expenses
--- Call this to automatically generate missing expenses for a given cycle
+-- 3. RPC: Sync Scheduled Expenses Auto-Generator
 -- ============================================
-
 CREATE OR REPLACE FUNCTION public.sync_scheduled_expenses(g_id UUID, target_cycle DATE)
 RETURNS VOID AS $$
 DECLARE
@@ -30,8 +28,8 @@ BEGIN
       -- Check if expense already exists for this cycle
       IF NOT EXISTS (SELECT 1 FROM public.expenses WHERE recurring_expense_id = re.id AND cycle_date = target_cycle AND is_deleted = false) THEN
         -- Create Expense
-        INSERT INTO public.expenses (group_id, description, total_amount, date, category, created_by, recurring_expense_id, cycle_date)
-        VALUES (g_id, re.name || ' (' || to_char(target_cycle, 'FMMonth YYYY') || ')', re.amount, target_cycle, 'Scheduled', re.created_by, re.id, target_cycle)
+        INSERT INTO public.expenses (group_id, description, total_amount, date, labels, created_by, recurring_expense_id, cycle_date, split_type)
+        VALUES (g_id, re.name || ' (' || to_char(target_cycle, 'FMMonth YYYY') || ')', re.amount, target_cycle, ARRAY['Scheduled'], re.created_by, re.id, target_cycle, re.split_type)
         RETURNING id INTO new_exp_id;
 
         -- Create Expense Payer (assuming created_by paid the whole amount)
@@ -40,8 +38,8 @@ BEGIN
 
         -- Create Expense Splits
         FOR split IN SELECT * FROM public.recurring_expense_splits WHERE recurring_expense_id = re.id LOOP
-          INSERT INTO public.expense_splits (expense_id, member_id, amount_owed)
-          VALUES (new_exp_id, split.member_id, split.amount_owed);
+          INSERT INTO public.expense_splits (expense_id, member_id, amount_owed, percentage, shares)
+          VALUES (new_exp_id, split.member_id, split.amount_owed, split.percentage, split.shares);
         END LOOP;
       END IF;
     END IF;
