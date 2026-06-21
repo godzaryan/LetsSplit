@@ -781,7 +781,10 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
       </div>
 
       {currentRole === 'owner' && (
-        <GroupLabelsEditor group={group} />
+        <>
+          <GroupLabelsEditor group={group} />
+          <ExpenseEditingSettings group={group} />
+        </>
       )}
 
       {currentRole !== 'owner' && (
@@ -858,6 +861,84 @@ function GroupLabelsEditor({ group }: { group: any }) {
             style={{ padding: '8px 16px', fontSize: '13px' }}
           >
             {isSaving ? 'Saving...' : 'Save Labels'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExpenseEditingSettings({ group }: { group: any }) {
+  const [allowAny, setAllowAny] = useState(group.allow_any_member_to_edit_expenses || false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const supabase = createClient();
+  const router = useRouter();
+
+  const handleToggle = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    const newValue = !allowAny;
+    
+    const { error } = await supabase
+      .from('groups')
+      .update({ allow_any_member_to_edit_expenses: newValue })
+      .eq('id', group.id);
+
+    setIsSaving(false);
+    if (error) {
+      setSaveMessage('Error updating setting');
+    } else {
+      setAllowAny(newValue);
+      setSaveMessage('Setting updated!');
+      router.refresh();
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: '16px' }}>
+      <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>Expense Edit Permissions</h3>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
+        By default, only the Creator, Payer, or Admin can edit an expense. You can remove this restriction so anyone in the group can edit any expense.
+      </p>
+      
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Allow anyone to edit</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{allowAny ? 'All members can edit any expense' : 'Restricted to Creator/Payer/Admin'}</div>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {saveMessage && (
+            <span style={{ fontSize: '12px', color: saveMessage.includes('Error') ? 'var(--accent-danger)' : 'var(--accent-success)' }}>
+              {saveMessage}
+            </span>
+          )}
+          <button
+            onClick={handleToggle}
+            disabled={isSaving}
+            style={{
+              width: '44px',
+              height: '24px',
+              borderRadius: '12px',
+              background: allowAny ? 'var(--accent-success)' : 'var(--bg-hover)',
+              border: 'none',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'background 0.2s ease'
+            }}
+          >
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: 'white',
+              position: 'absolute',
+              top: '2px',
+              left: allowAny ? '22px' : '2px',
+              transition: 'left 0.2s ease'
+            }} />
           </button>
         </div>
       </div>
