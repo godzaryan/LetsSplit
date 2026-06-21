@@ -73,39 +73,18 @@ export default function MonthlyFixedExpenses({
     setLoadingPaymentId(loadKey);
 
     try {
-      if (isPaid && paymentId) {
-        // 1. Fetch payment to get settlement_id
-        const { data: paymentRecord } = await supabase.from('scheduled_expense_payments').select('settlement_id').eq('id', paymentId).single();
-        
-        // 2. Delete payment
+      if (isPaid) {
+        // Delete payment
         await supabase.from('scheduled_expense_payments').delete().eq('id', paymentId);
-        
-        // 3. Delete settlement if exists
-        if (paymentRecord?.settlement_id) {
-          await supabase.from('settlements').delete().eq('id', paymentRecord.settlement_id);
-        }
-        
         window.location.reload(); 
       } else {
-        // Mark paid
-        // 1. Create settlement
-        const { data: settlementData, error: stErr } = await supabase.from('settlements').insert({
-          group_id: groupId,
-          paid_by: memberId,
-          paid_to: currentMemberId, // Assuming owner is currentMemberId and they paid the base bill
-          amount: amount
-        }).select().single();
-        
-        if (stErr) throw stErr;
-
-        // 2. Insert scheduled payment checklist record
+        // 2. Insert scheduled payment checklist record (No settlements created for pending/ghost ledger approach)
         await supabase.from('scheduled_expense_payments').insert({
           recurring_expense_id: re.id,
           cycle_date: cycleDateStr,
           member_id: memberId,
           amount: amount,
           marked_by: currentMemberId,
-          settlement_id: settlementData.id
         });
         
         window.location.reload();

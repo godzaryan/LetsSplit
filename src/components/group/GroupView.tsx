@@ -191,7 +191,23 @@ export default function GroupView({
 
   // Stats
   const totalExpenses = expenses.reduce((sum: number, e: any) => sum + Number(e.total_amount), 0);
-  const myBalance = netBalances[currentMemberId] || 0;
+  // Calculate unpaid scheduled expenses for the current user visually
+  let unpaidScheduled = 0;
+  const nowForCycle = new Date();
+  const currentCycleStr = `${nowForCycle.getUTCFullYear()}-${String(nowForCycle.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  
+  recurringExpenses?.forEach((r: any) => {
+    r.recurring_expense_splits?.forEach((s: any) => {
+      if (s.member_id === currentMemberId) {
+        const paid = r.scheduled_expense_payments?.some((p: any) => p.cycle_date === currentCycleStr && p.member_id === s.member_id);
+        if (!paid) {
+          unpaidScheduled += Number(s.amount_owed);
+        }
+      }
+    });
+  });
+
+  const myBalance = (netBalances[currentMemberId] || 0) - unpaidScheduled;
 
   const tabs = [
     { key: 'expenses', label: 'Expenses', icon: <AnimatedIcon animationType="hover-bounce"><ClipboardList size={16} color="currentColor" /></AnimatedIcon> },

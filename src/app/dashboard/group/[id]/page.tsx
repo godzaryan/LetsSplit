@@ -50,12 +50,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     redirect('/dashboard'); // Deny access to pending users
   }
 
-  // --- LAZY SYNC SCHEDULED EXPENSES ---
-  const today = new Date();
-  const currentCycleStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-01`;
-  await supabase.rpc('sync_scheduled_expenses', { g_id: groupId, target_cycle: currentCycleStr });
-
-  // Fetch expenses (non-deleted)
+  // Fetch regular expenses (ignore scheduled ones from the P2P ledger)
   const { data: expenses } = await supabase
     .from('expenses')
     .select(`
@@ -64,27 +59,22 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       total_amount,
       currency,
       split_type,
-      labels,
       date,
       receipt_url,
       created_by,
       created_at,
       recurring_expense_id,
       cycle_date,
+      labels,
       expense_payers (
-        id,
-        member_id,
-        amount_paid
+        id, member_id, amount_paid
       ),
       expense_splits (
-        id,
-        member_id,
-        amount_owed,
-        percentage,
-        shares
+        id, member_id, amount_owed, percentage, shares
       )
     `)
     .eq('group_id', groupId)
+    .is('recurring_expense_id', null)
     .eq('is_deleted', false)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });

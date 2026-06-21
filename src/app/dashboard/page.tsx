@@ -31,13 +31,6 @@ export default async function DashboardPage() {
   let recentActivity: any[] = [];
 
   if (groupIds.length > 0) {
-    // --- LAZY SYNC SCHEDULED EXPENSES FOR ALL GROUPS ---
-    const today = new Date();
-    const currentCycleStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-01`;
-    await Promise.all(groupIds.map(gId => 
-      supabase.rpc('sync_scheduled_expenses', { g_id: gId, target_cycle: currentCycleStr })
-    ));
-
     const { data: expenses } = await supabase
       .from('expenses')
       .select(`
@@ -46,6 +39,7 @@ export default async function DashboardPage() {
         expense_splits ( member_id, amount_owed )
       `)
       .in('group_id', groupIds)
+      .is('recurring_expense_id', null)
       .eq('is_deleted', false);
 
     const { data: settlements } = await supabase
@@ -82,6 +76,35 @@ export default async function DashboardPage() {
       if (balance > 0.01) globalOwed += balance;
       else if (balance < -0.01) globalOwe += Math.abs(balance);
     });
+
+    // Add unpaid scheduled expenses to "You Owe" visually
+    let unpaidScheduled = 0;
+    const nowForCycle = new Date();
+    const currentCycleStr = `${nowForCycle.getUTCFullYear()}-${String(nowForCycle.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+    const { data: recurring } = await supabase
+      .from('recurring_expenses')
+      .select('id, amount, recurring_expense_splits(member_id, amount_owed)')
+      .in('group_id', groupIds)
+      .eq('is_active', true);
+
+    const { data: payments } = await supabase
+      .from('scheduled_expense_payments')
+      .select('recurring_expense_id, member_id')
+      .eq('cycle_date', currentCycleStr);
+
+    recurring?.forEach((r: any) => {
+      r.recurring_expense_splits?.forEach((s: any) => {
+        if (userMemberIds.includes(s.member_id)) {
+          const paid = payments?.some((p: any) => p.recurring_expense_id === r.id && p.member_id === s.member_id);
+          if (!paid) {
+            unpaidScheduled += Number(s.amount_owed);
+          }
+        }
+      });
+    });
+
+    globalOwe += unpaidScheduled;
 
     const { data: logs } = await supabase
       .from('audit_logs')
