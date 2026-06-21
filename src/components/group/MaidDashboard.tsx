@@ -367,6 +367,7 @@ export default function MaidDashboard({
               {maid && <button className="btn-secondary" onClick={() => setShowConfig(false)}>Cancel</button>}
               <button className="btn-primary" onClick={handleSaveConfig}><Save size={16} style={{ marginRight: '6px', display: 'inline' }} /> Save Configuration</button>
             </div>
+          </div>
         </div>
       )}
 
