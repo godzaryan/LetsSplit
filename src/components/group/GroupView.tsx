@@ -582,6 +582,7 @@ export default function GroupView({
                   expenses={expenses}
                   currencySymbol={currencySymbol}
                   currentRole={currentRole}
+                  currentUserId={currentUserId}
                   onManage={() => setShowManageRecurring(true)}
                   onSettleCylinder={(cylinderTemplate) => {
                     const todayDateStr = new Date().toLocaleDateString('en-CA');

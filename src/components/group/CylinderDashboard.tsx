@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { Flame, Plus, Clock, History, Settings, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Flame, Plus, Clock, History, Settings, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Sunrise, Sun, Moon, X } from 'lucide-react';
 
 interface CylinderDashboardProps {
   groupId: string;
@@ -10,6 +11,7 @@ interface CylinderDashboardProps {
   expenses: any[];
   currencySymbol: string;
   currentRole: string;
+  currentUserId: string;
   onManage: () => void;
   onSettleCylinder: (cylinderTemplate: any) => void;
 }
@@ -20,10 +22,40 @@ export default function CylinderDashboard({
   expenses,
   currencySymbol,
   currentRole,
+  currentUserId,
   onManage,
   onSettleCylinder
 }: CylinderDashboardProps) {
+  const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [usageData, setUsageData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
+  // Modal State
+  const [selectedDay, setSelectedDay] = useState<{ dateStr: string, morning: boolean, afternoon: boolean, night: boolean } | null>(null);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchUsageData();
+  }, [groupId]);
+
+  const fetchUsageData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('cylinder_usage')
+        .select('*')
+        .eq('group_id', groupId);
+      
+      if (error) throw error;
+      setUsageData(data || []);
+    } catch (err) {
+      console.error('Error fetching cylinder usage:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cylinderTemplate = useMemo(() => {
     return recurringExpenses.find(re => re.name.toLowerCase() === 'cylinder');
   }, [recurringExpenses]);
@@ -35,58 +67,138 @@ export default function CylinderDashboard({
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenses, cylinderTemplate]);
 
+  // Enhanced Analytics based on Meals instead of just Days
   const analytics = useMemo(() => {
     if (cylinderExpenses.length === 0) return null;
 
     const totalSpent = cylinderExpenses.reduce((sum, e) => sum + Number(e.total_amount), 0);
     const lastPurchase = cylinderExpenses[0];
     const lastPurchaseDate = new Date(lastPurchase.date);
-    
-    // Calculate days since last purchase
+    const [lYear, lMonth, lDay] = lastPurchase.date.split('-').map(Number);
+    const lastMidnight = new Date(lYear, lMonth - 1, lDay);
+
     const today = new Date();
-    // Normalize to midnight to get whole days
     const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const lastMidnight = new Date(lastPurchaseDate.getFullYear(), lastPurchaseDate.getMonth(), lastPurchaseDate.getDate());
     
     const diffTime = Math.abs(todayMidnight.getTime() - lastMidnight.getTime());
     const daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    // Calculate average duration
-    let avgDuration = 0;
+    // Calculate meals!
+    let totalHistoricalMeals = 0;
+    let currentCylinderMeals = 0;
+
+    usageData.forEach(u => {
+      const mealsCount = (u.morning ? 1 : 0) + (u.afternoon ? 1 : 0) + (u.night ? 1 : 0);
+      totalHistoricalMeals += mealsCount;
+      
+      const [uYear, uMonth, uDay] = u.date.split('-').map(Number);
+      const uDate = new Date(uYear, uMonth - 1, uDay);
+      if (uDate >= lastMidnight) {
+        currentCylinderMeals += mealsCount;
+      }
+    });
+
+    let avgMealsPerCylinder = 0;
     if (cylinderExpenses.length > 1) {
-      // Since it's sorted descending, oldest is at the end
-      const oldestPurchaseDate = new Date(cylinderExpenses[cylinderExpenses.length - 1].date);
-      const oldestMidnight = new Date(oldestPurchaseDate.getFullYear(), oldestPurchaseDate.getMonth(), oldestPurchaseDate.getDate());
-      
-      const totalTime = Math.abs(lastMidnight.getTime() - oldestMidnight.getTime());
-      const totalDays = Math.floor(totalTime / (1000 * 60 * 60 * 24));
-      
-      // If there are N expenses, there are N-1 intervals
-      avgDuration = Math.round(totalDays / (cylinderExpenses.length - 1));
+      // We exclude the current cylinder from the average because it's not empty yet
+      // The historical meals consumed BEFORE the last purchase date:
+      let historicalMealsBeforeCurrent = 0;
+      usageData.forEach(u => {
+        const [uYear, uMonth, uDay] = u.date.split('-').map(Number);
+        const uDate = new Date(uYear, uMonth - 1, uDay);
+        if (uDate < lastMidnight) {
+          historicalMealsBeforeCurrent += (u.morning ? 1 : 0) + (u.afternoon ? 1 : 0) + (u.night ? 1 : 0);
+        }
+      });
+      avgMealsPerCylinder = Math.round(historicalMealsBeforeCurrent / (cylinderExpenses.length - 1));
     }
 
     return {
       totalSpent,
       daysSince,
-      avgDuration,
+      avgMealsPerCylinder,
+      currentCylinderMeals,
       count: cylinderExpenses.length,
-      lastPurchaseDate: lastPurchaseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      lastAmount: Number(lastPurchase.total_amount)
+      lastPurchaseDate: lastPurchaseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
-  }, [cylinderExpenses]);
+  }, [cylinderExpenses, usageData]);
+
+  const handleToggleUsage = async (dateStr: string, mealType: 'morning' | 'afternoon' | 'night', currentValue: boolean) => {
+    // Optimistic update
+    const updatedValue = !currentValue;
+    let newUsageData = [...usageData];
+    const existingIndex = newUsageData.findIndex(u => u.date === dateStr);
+    
+    if (existingIndex >= 0) {
+      newUsageData[existingIndex] = { ...newUsageData[existingIndex], [mealType]: updatedValue };
+    } else {
+      newUsageData.push({
+        date: dateStr,
+        morning: mealType === 'morning' ? true : false,
+        afternoon: mealType === 'afternoon' ? true : false,
+        night: mealType === 'night' ? true : false,
+      });
+    }
+    setUsageData(newUsageData);
+
+    if (selectedDay) {
+      setSelectedDay(prev => prev ? { ...prev, [mealType]: updatedValue } : null);
+    }
+
+    try {
+      const record = newUsageData.find(u => u.date === dateStr);
+      if (!record) return;
+
+      const { error } = await supabase.from('cylinder_usage').upsert({
+        group_id: groupId,
+        date: dateStr,
+        morning: record.morning || false,
+        afternoon: record.afternoon || false,
+        night: record.night || false,
+        marked_by: currentUserId,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'group_id, date' });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to toggle usage:', err);
+      // Revert optimism if failed
+      fetchUsageData();
+    }
+  };
+
+  // Calendar Grid Generation
+  const calendarDays = useMemo(() => {
+    const days = [];
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const usage = usageData.find(u => u.date === dateStr) || { morning: false, afternoon: false, night: false };
+      
+      days.push({ day: i, dateStr, ...usage });
+    }
+    
+    return days;
+  }, [currentDate, usageData]);
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   if (!cylinderTemplate) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ 
-          width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(230, 0, 0, 0.1)', 
-          color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' 
-        }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(230, 0, 0, 0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <Flame size={32} />
         </div>
         <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '12px' }}>Cylinder Management</h2>
         <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 24px', lineHeight: '1.5' }}>
-          Track your gas cylinder replacements, calculate average consumption duration, and predict when you'll need a new one.
+          Track your gas cylinder replacements, log daily cooking sessions, and calculate highly accurate predictive analytics based on meals cooked.
         </p>
         {currentRole === 'owner' ? (
           <button className="btn-primary" onClick={onManage}>
@@ -99,11 +211,13 @@ export default function CylinderDashboard({
     );
   }
 
-  const isLow = analytics && analytics.avgDuration > 0 && analytics.daysSince >= analytics.avgDuration - 3;
-  const isOverdue = analytics && analytics.avgDuration > 0 && analytics.daysSince > analytics.avgDuration;
+  const isLow = analytics && analytics.avgMealsPerCylinder > 0 && analytics.currentCylinderMeals >= analytics.avgMealsPerCylinder - 6;
+  const isOverdue = analytics && analytics.avgMealsPerCylinder > 0 && analytics.currentCylinderMeals > analytics.avgMealsPerCylinder;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <AnimatedIcon animationType="hover-bounce"><Flame size={24} color="var(--accent-warning)" /></AnimatedIcon>
@@ -136,9 +250,8 @@ export default function CylinderDashboard({
         </div>
       ) : (
         <>
-          {/* Main Stats Grid */}
+          {/* Analytics Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            
             {/* Status Card */}
             <div className="card" style={{ 
               padding: '24px', 
@@ -147,21 +260,21 @@ export default function CylinderDashboard({
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Current Cylinder
+                  Current Cylinder Usage
                 </div>
                 {isOverdue ? <AlertTriangle size={20} color="var(--accent-danger)" /> :
                  isLow ? <AlertTriangle size={20} color="var(--accent-warning)" /> :
                  <CheckCircle2 size={20} color="var(--accent-success)" />}
               </div>
               <div style={{ fontSize: '32px', fontWeight: 800, color: isOverdue ? 'var(--accent-danger)' : isLow ? 'var(--accent-warning)' : 'var(--text-primary)', marginBottom: '4px' }}>
-                {analytics.daysSince} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>Days Active</span>
+                {analytics.currentCylinderMeals} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>Meals Cooked</span>
               </div>
               
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px' }}>
                 <Clock size={14} /> 
-                {analytics.avgDuration > 0 
-                  ? `Avg life: ${analytics.avgDuration} days`
-                  : 'Gathering data...'}
+                {analytics.avgMealsPerCylinder > 0 
+                  ? `Avg Capacity: ${analytics.avgMealsPerCylinder} meals`
+                  : 'Gathering historical data...'}
               </div>
               
               {(isLow || isOverdue) && (
@@ -170,103 +283,173 @@ export default function CylinderDashboard({
                   background: isOverdue ? 'rgba(230, 0, 0, 0.1)' : 'rgba(255, 171, 0, 0.1)',
                   color: isOverdue ? 'var(--accent-danger)' : 'var(--accent-warning)'
                 }}>
-                  {isOverdue ? 'Replacement is overdue!' : 'Running low, order soon.'}
+                  {isOverdue ? 'Replacement is strictly overdue!' : 'Running low, order soon.'}
                 </div>
               )}
             </div>
 
-            {/* Average Stats */}
-            <div className="card" style={{ padding: '24px' }}>
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                Consumption Speed
+            {/* General Stats */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="card" style={{ padding: '20px', flex: 1 }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                  Days Active
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {analytics.daysSince} <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-muted)' }}>Days</span>
+                </div>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--accent-info)', marginBottom: '4px' }}>
-                {analytics.avgDuration > 0 ? analytics.avgDuration : '--'} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>Days / Unit</span>
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>
-                Based on {analytics.count - 1 > 0 ? `${analytics.count - 1} tracked intervals` : 'insufficient data'}
-              </div>
-            </div>
-
-            {/* Total Spent */}
-            <div className="card" style={{ padding: '24px' }}>
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                Total Invested
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--accent-success)', marginBottom: '4px' }}>
-                {currencySymbol}{analytics.totalSpent.toFixed(2)}
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>
-                Across {analytics.count} cylinders purchased
+              <div className="card" style={{ padding: '20px', flex: 1 }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                  Total Invested
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-success)' }}>
+                  {currencySymbol}{analytics.totalSpent.toFixed(2)}
+                </div>
               </div>
             </div>
-            
           </div>
 
-          {/* History List */}
+          {/* Cooking Calendar */}
           <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <History size={18} color="var(--text-secondary)" />
-              Replacement History
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {cylinderExpenses.map((exp, index) => {
-                const isLatest = index === 0;
-                
-                // Calculate duration of this specific cylinder (days between this and the next one chronologically)
-                // Since array is sorted descending (newest first), the next chronological is index - 1.
-                let durationStr = 'Current';
-                if (index > 0) {
-                  const thisDate = new Date(exp.date);
-                  const nextChronologicalDate = new Date(cylinderExpenses[index - 1].date);
-                  const diffTime = Math.abs(nextChronologicalDate.getTime() - thisDate.getTime());
-                  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                  durationStr = `Lasted ${days} Days`;
-                }
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Cooking Calendar</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '20px', border: '1px solid var(--border-subtle)' }}>
+                <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+                  <ChevronLeft size={16} />
+                </button>
+                <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '90px', textAlign: 'center' }}>
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </span>
+                {(() => {
+                  const now = new Date();
+                  const isFuture = currentDate.getFullYear() > now.getFullYear() || (currentDate.getFullYear() === now.getFullYear() && currentDate.getMonth() >= now.getMonth());
+                  return (
+                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} disabled={isFuture} style={{ background: 'none', border: 'none', color: isFuture ? 'var(--border-subtle)' : 'var(--text-secondary)', cursor: isFuture ? 'not-allowed' : 'pointer', padding: '4px' }}>
+                      <ChevronRight size={16} />
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
 
-                return (
-                  <div key={exp.id} style={{ 
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                    padding: '16px', borderRadius: '12px',
-                    background: isLatest ? 'rgba(108, 92, 231, 0.05)' : 'var(--bg-secondary)',
-                    border: `1px solid ${isLatest ? 'var(--border-active)' : 'transparent'}`
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ 
-                        width: '40px', height: '40px', borderRadius: '10px', 
-                        background: isLatest ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                        color: isLatest ? '#fff' : 'var(--text-muted)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        <Flame size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>
-                          {new Date(exp.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                          {durationStr}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
-                        {currencySymbol}{Number(exp.total_amount).toFixed(2)}
-                      </div>
-                      {isLatest && (
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent-primary)', textTransform: 'uppercase', marginTop: '4px' }}>
-                          Active Now
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} style={{ textAlign: 'center', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', paddingBottom: '8px' }}>{day}</div>
+              ))}
+              
+              {loading ? (
+                <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading calendar...</div>
+              ) : (
+                calendarDays.map((day, i) => {
+                  if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: '1', padding: '4px' }} />;
+                  
+                  const isToday = day.dateStr === new Date().toLocaleDateString('en-CA');
+                  const hasUsage = day.morning || day.afternoon || day.night;
+                  
+                  return (
+                    <button
+                      key={day.dateStr}
+                      onClick={() => setSelectedDay(day)}
+                      style={{
+                        aspectRatio: '1',
+                        borderRadius: '12px',
+                        border: `1px solid ${isToday ? 'var(--accent-primary)' : hasUsage ? 'var(--border-active)' : 'transparent'}`,
+                        background: hasUsage ? 'rgba(255, 171, 0, 0.05)' : 'var(--bg-secondary)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                      className="calendar-btn"
+                    >
+                      <span style={{ fontSize: '14px', fontWeight: isToday ? 700 : 500, color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                        {day.day}
+                      </span>
+                      
+                      {hasUsage && (
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {day.morning && <Sunrise size={10} color="#00cec9" />}
+                          {day.afternoon && <Sun size={10} color="#fdcb6e" />}
+                          {day.night && <Moon size={10} color="#6c5ce7" />}
                         </div>
                       )}
-                    </div>
-                  </div>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '20px', fontSize: '11px', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sunrise size={12} color="#00cec9" /> Morning</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sun size={12} color="#fdcb6e" /> Afternoon</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Moon size={12} color="#6c5ce7" /> Night</div>
             </div>
           </div>
         </>
+      )}
+
+      {/* Usage Modal */}
+      {selectedDay && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          zIndex: 300, padding: '20px', backdropFilter: 'blur(4px)'
+        }} onClick={(e) => e.target === e.currentTarget && setSelectedDay(null)}>
+          <div className="glass animate-slide-up" style={{
+            width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '28px',
+            background: 'var(--bg-card)', border: '1px solid var(--border-active)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Log Cooking Session</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  {new Date(selectedDay.dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              <button onClick={() => setSelectedDay(null)} style={{ background: 'var(--bg-secondary)', border: 'none', color: 'var(--text-muted)', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { key: 'morning', label: 'Morning', icon: <Sunrise size={20} />, color: '#00cec9' },
+                { key: 'afternoon', label: 'Afternoon', icon: <Sun size={20} />, color: '#fdcb6e' },
+                { key: 'night', label: 'Night', icon: <Moon size={20} />, color: '#6c5ce7' }
+              ].map(meal => {
+                const isActive = selectedDay[meal.key as keyof typeof selectedDay] as boolean;
+                return (
+                  <button
+                    key={meal.key}
+                    onClick={() => handleToggleUsage(selectedDay.dateStr, meal.key as any, isActive)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '16px 20px', borderRadius: '16px',
+                      background: isActive ? `${meal.color}20` : 'var(--bg-secondary)',
+                      border: `1px solid ${isActive ? meal.color : 'transparent'}`,
+                      color: isActive ? meal.color : 'var(--text-primary)',
+                      cursor: 'pointer', transition: 'all 0.2s ease',
+                      fontWeight: 600, fontSize: '15px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {meal.icon} {meal.label}
+                    </div>
+                    {isActive && <CheckCircle2 size={18} />}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button className="btn-primary" onClick={() => setSelectedDay(null)} style={{ width: '100%', marginTop: '24px', padding: '14px' }}>
+              Done
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
