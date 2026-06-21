@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MonthlyFixedExpensesProps {
   recurringExpenses: any[];
@@ -23,7 +23,12 @@ export default function MonthlyFixedExpenses({
   onManage
 }: MonthlyFixedExpensesProps) {
   const [loadingPaymentId, setLoadingPaymentId] = useState<string | null>(null);
+  const [expandedExpenses, setExpandedExpenses] = useState<Record<string, boolean>>({});
   const supabase = createClient();
+
+  const toggleExpand = (id: string) => {
+    setExpandedExpenses(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Start with current month
   const today = new Date();
@@ -153,6 +158,12 @@ export default function MonthlyFixedExpenses({
             {activeForMonth.map(re => {
               const payments = re.scheduled_expense_payments || [];
               const splits = re.recurring_expense_splits || [];
+              const isExpanded = expandedExpenses[re.id];
+              
+              const paidCount = splits.filter((split: any) => 
+                payments.some((p: any) => p.member_id === split.member_id && p.cycle_date === cycleDateStr)
+              ).length;
+              const totalCount = splits.length;
 
               return (
                 <div key={re.id} style={{
@@ -162,13 +173,17 @@ export default function MonthlyFixedExpenses({
                   overflow: 'hidden'
                 }}>
                   {/* Expense Header */}
-                  <div style={{
-                    padding: '16px',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
+                  <div 
+                    onClick={() => toggleExpand(re.id)}
+                    style={{
+                      padding: '16px',
+                      borderBottom: isExpanded ? '1px solid var(--border-subtle)' : 'none',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
                     <div>
                       <h4 style={{ fontWeight: 800, fontSize: '15px', color: 'white', wordBreak: 'break-word', marginBottom: '2px' }}>
                         {re.name}
@@ -177,10 +192,24 @@ export default function MonthlyFixedExpenses({
                         Total: {currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}
                       </p>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        fontSize: '12px', fontWeight: 700,
+                        color: paidCount === totalCount && totalCount > 0 ? 'var(--accent-success)' : 'var(--text-secondary)',
+                        background: paidCount === totalCount && totalCount > 0 ? 'rgba(0, 204, 102, 0.1)' : 'var(--bg-secondary)',
+                        padding: '4px 10px', borderRadius: '12px'
+                      }}>
+                        {paidCount}/{totalCount} Paid
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Checklist */}
-                  <div style={{ padding: '8px 16px' }}>
+                  {isExpanded && (
+                    <div style={{ padding: '8px 16px' }}>
                     {splits.map((split: any) => {
                       // Find if this member paid for this cycle
                       const paymentRecord = payments.find((p: any) => p.member_id === split.member_id && p.cycle_date === cycleDateStr);
@@ -250,6 +279,7 @@ export default function MonthlyFixedExpenses({
                       );
                     })}
                   </div>
+                  )}
                 </div>
               );
             })}
