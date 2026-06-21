@@ -346,10 +346,29 @@ export default function CylinderDashboard({
                   const isToday = day.dateStr === new Date().toLocaleDateString('en-CA');
                   const hasUsage = day.morning || day.afternoon || day.night;
                   
+                  // Determine if clickable
+                  let isClickable = true;
+                  if (cylinderExpenses.length === 0) {
+                    isClickable = false;
+                  } else {
+                    const targetDate = new Date(day.dateStr);
+                    targetDate.setHours(0,0,0,0);
+                    const todayDate = new Date();
+                    todayDate.setHours(0,0,0,0);
+                    
+                    const oldestPurchaseStr = cylinderExpenses[cylinderExpenses.length - 1].date;
+                    const oldestPurchaseDate = new Date(oldestPurchaseStr);
+                    oldestPurchaseDate.setHours(0,0,0,0);
+
+                    if (targetDate > todayDate) isClickable = false; // no future
+                    if (targetDate < oldestPurchaseDate) isClickable = false; // no past before first cylinder
+                  }
+
                   return (
                     <button
                       key={day.dateStr}
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => isClickable && setSelectedDay(day)}
+                      disabled={!isClickable}
                       style={{
                         aspectRatio: '1',
                         borderRadius: '12px',
@@ -360,7 +379,8 @@ export default function CylinderDashboard({
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '4px',
-                        cursor: 'pointer',
+                        cursor: isClickable ? 'pointer' : 'not-allowed',
+                        opacity: isClickable ? 1 : 0.3,
                         transition: 'all 0.2s ease',
                         position: 'relative'
                       }}
