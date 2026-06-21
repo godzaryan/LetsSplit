@@ -62,6 +62,17 @@ export default function MonthlyFixedExpenses({
 
       if (currentMonth < startMonth) return false;
       if (endMonth && currentMonth > endMonth) return false;
+      
+      // If one-time, only show in the exact start month
+      if (re.cycle === 'one-time') {
+        if (currentMonth.getTime() !== startMonth.getTime()) return false;
+      }
+      
+      // If yearly, only show in the same month each year
+      if (re.cycle === 'yearly') {
+        if (currentMonth.getMonth() !== startMonth.getMonth()) return false;
+      }
+      
       return true;
     });
   }, [recurringExpenses, currentMonth]);
