@@ -132,18 +132,18 @@ export default function MonthlyFixedExpenses({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ 
                       width: '40px', height: '40px', borderRadius: '10px', 
-                      background: isSettled ? 'rgba(46, 204, 113, 0.1)' : 'rgba(243, 156, 18, 0.1)', 
+                      background: isSettled ? 'rgba(0, 204, 102, 0.1)' : 'rgba(255, 170, 0, 0.1)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center' 
                     }}>
                       {isSettled ? (
-                        <CheckCircle size={20} color="var(--success)" />
+                        <CheckCircle size={20} color="var(--accent-success)" />
                       ) : (
-                        <Calendar size={20} color="var(--warning)" />
+                        <Calendar size={20} color="var(--accent-warning)" />
                       )}
                     </div>
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: isSettled ? 'var(--success)' : 'var(--text-muted)', marginTop: '2px' }}>
+                      <p style={{ margin: 0, fontSize: '13px', color: isSettled ? 'var(--accent-success)' : 'var(--text-muted)', marginTop: '2px' }}>
                         {isSettled ? `Settled • Total: ${currencySymbol}${settledLedgerEntry.total_amount}` : `Pending • Target: ${currencySymbol}${expense.amount}`}
                       </p>
                     </div>
@@ -162,14 +162,14 @@ export default function MonthlyFixedExpenses({
                       <div style={{ background: 'var(--bg-tertiary)', borderRadius: '12px', padding: '16px', marginTop: '8px', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actual Payments</span>
-                          <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600 }}>Recorded in Ledger</span>
+                          <span style={{ fontSize: '12px', color: 'var(--accent-success)', fontWeight: 600 }}>Recorded in Ledger</span>
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {settledLedgerEntry.expense_payers?.map((payer: any) => (
                             <div key={payer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-success)' }}></div>
                                 <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
                                   {getMemberName(payer.member_id)} {payer.member_id === currentMemberId && '(You)'}
                                 </span>
@@ -184,25 +184,8 @@ export default function MonthlyFixedExpenses({
                     ) : (
                       <div style={{ marginTop: '8px' }}>
                         <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                          This month has not been settled in the ledger yet.
+                          This month has not been settled in the ledger yet. Add an expense manually and link it to this template.
                         </div>
-                        {currentRole === 'owner' && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onSettleMonth) onSettleMonth(expense, cycleDateStr);
-                            }}
-                            style={{
-                              padding: '10px 16px', borderRadius: '8px', border: 'none',
-                              background: 'var(--accent-primary)', color: 'white',
-                              fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: '6px'
-                            }}
-                          >
-                            <Edit3 size={16} />
-                            Settle Month
-                          </button>
-                        )}
                       </div>
                     )}
                     
