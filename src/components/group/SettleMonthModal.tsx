@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { X, CheckCircle, Calculator, AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export default function SettleMonthModal({ isOpen, onClose, recurringExpense, members, currentCycleStr, groupId, currentMemberId }: Props) {
+  const supabase = createClient();
   const [actualTotal, setActualTotal] = useState<number>(Number(recurringExpense?.amount) || 0);
   const [payments, setPayments] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
