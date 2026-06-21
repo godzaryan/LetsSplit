@@ -31,6 +31,13 @@ export default async function DashboardPage() {
   let recentActivity: any[] = [];
 
   if (groupIds.length > 0) {
+    // --- LAZY SYNC SCHEDULED EXPENSES FOR ALL GROUPS ---
+    const today = new Date();
+    const currentCycleStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-01`;
+    await Promise.all(groupIds.map(gId => 
+      supabase.rpc('sync_scheduled_expenses', { g_id: gId, target_cycle: currentCycleStr })
+    ));
+
     const { data: expenses } = await supabase
       .from('expenses')
       .select(`
