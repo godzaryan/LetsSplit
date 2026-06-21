@@ -128,7 +128,7 @@ export default function MaidDashboard({
           cycle: 'monthly',
           start_date: joinedDate,
           split_type: 'equal',
-          created_by: currentUserId
+          created_by: currentMemberId
         }).select().single();
         
         if (insErr) {
