@@ -74,7 +74,6 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       )
     `)
     .eq('group_id', groupId)
-    .is('recurring_expense_id', null)
     .eq('is_deleted', false)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
@@ -104,13 +103,6 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         amount_owed,
         percentage,
         shares
-      ),
-      scheduled_expense_payments (
-        id,
-        cycle_date,
-        member_id,
-        amount,
-        paid_at
       )
     `)
     .eq('group_id', groupId)

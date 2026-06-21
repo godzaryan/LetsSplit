@@ -39,7 +39,6 @@ export default async function DashboardPage() {
         expense_splits ( member_id, amount_owed )
       `)
       .in('group_id', groupIds)
-      .is('recurring_expense_id', null)
       .eq('is_deleted', false);
 
     const { data: settlements } = await supabase
@@ -88,20 +87,25 @@ export default async function DashboardPage() {
       .in('group_id', groupIds)
       .eq('is_active', true);
 
-    const { data: payments } = await supabase
-      .from('scheduled_expense_payments')
-      .select('recurring_expense_id, member_id')
-      .eq('cycle_date', currentCycleStr);
+    const { data: settledExpenses } = await supabase
+      .from('expenses')
+      .select('recurring_expense_id')
+      .not('recurring_expense_id', 'is', null)
+      .eq('cycle_date', currentCycleStr)
+      .in('group_id', groupIds)
+      .eq('is_deleted', false);
 
     recurring?.forEach((r: any) => {
-      r.recurring_expense_splits?.forEach((s: any) => {
-        if (userMemberIds.includes(s.member_id)) {
-          const paid = payments?.some((p: any) => p.recurring_expense_id === r.id && p.member_id === s.member_id);
-          if (!paid) {
+      // If this cycle is already settled in the ledger, don't show it as visually pending
+      const isSettled = settledExpenses?.some((e: any) => e.recurring_expense_id === r.id);
+      
+      if (!isSettled) {
+        r.recurring_expense_splits?.forEach((s: any) => {
+          if (userMemberIds.includes(s.member_id)) {
             unpaidScheduled += Number(s.amount_owed);
           }
-        }
-      });
+        });
+      }
     });
 
     globalOwe += unpaidScheduled;

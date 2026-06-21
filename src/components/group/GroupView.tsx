@@ -197,14 +197,16 @@ export default function GroupView({
   const currentCycleStr = `${nowForCycle.getUTCFullYear()}-${String(nowForCycle.getUTCMonth() + 1).padStart(2, '0')}-01`;
   
   recurringExpenses?.forEach((r: any) => {
-    r.recurring_expense_splits?.forEach((s: any) => {
-      if (s.member_id === currentMemberId) {
-        const paid = r.scheduled_expense_payments?.some((p: any) => p.cycle_date === currentCycleStr && p.member_id === s.member_id);
-        if (!paid) {
+    // Check if this cycle is already settled as a real expense
+    const isSettled = expenses.some((e: any) => e.recurring_expense_id === r.id && e.cycle_date === currentCycleStr);
+    
+    if (!isSettled) {
+      r.recurring_expense_splits?.forEach((s: any) => {
+        if (s.member_id === currentMemberId) {
           unpaidScheduled += Number(s.amount_owed);
         }
-      }
-    });
+      });
+    }
   });
 
   const myBalance = (netBalances[currentMemberId] || 0) - unpaidScheduled;
@@ -387,6 +389,7 @@ export default function GroupView({
                   groupId={group.id}
                   recurringExpenses={recurringExpenses}
                   members={members}
+                  expenses={expenses}
                   currencySymbol={currencySymbol}
                   currentRole={currentRole}
                   currentMemberId={currentMemberId}

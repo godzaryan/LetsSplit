@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
+import SettleMonthModal from './SettleMonthModal';
 
 interface MonthlyFixedExpensesProps {
   groupId: string;
   recurringExpenses: any[];
   members: any[];
+  expenses: any[];
   currencySymbol: string;
   currentRole: string;
   currentMemberId: string;
@@ -19,22 +20,23 @@ export default function MonthlyFixedExpenses({
   groupId,
   recurringExpenses,
   members,
+  expenses,
   currencySymbol,
   currentRole,
   currentMemberId,
   onManage
 }: MonthlyFixedExpensesProps) {
-  const [loadingPaymentId, setLoadingPaymentId] = useState<string | null>(null);
   const [expandedExpenses, setExpandedExpenses] = useState<Record<string, boolean>>({});
-  const supabase = createClient();
-
-  const toggleExpand = (id: string) => {
-    setExpandedExpenses(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const [settleModalOpen, setSettleModalOpen] = useState(false);
+  const [expenseToSettle, setExpenseToSettle] = useState<any>(null);
 
   // Start with current month
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+
+  const toggleExpand = (id: string) => {
+    setExpandedExpenses(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const changeMonth = (offset: number) => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
@@ -44,14 +46,12 @@ export default function MonthlyFixedExpenses({
     const member = members.find((m: any) => m.id === memberId);
     if (!member) return 'Unknown';
     if (member.is_ghost) return member.ghost_name;
-    return member.users?.display_name || 'Unknown';
+    return member.users?.display_name || member.users?.email || 'Unknown';
   };
 
-  // Format month string, e.g., "June 2026"
-  const monthString = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const cycleDateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`;
+  const monthString = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  // Get active recurring expenses for this month
   const activeForMonth = useMemo(() => {
     return recurringExpenses.filter(re => {
       const start = new Date(re.start_date);
@@ -65,39 +65,8 @@ export default function MonthlyFixedExpenses({
     });
   }, [recurringExpenses, currentMonth]);
 
-  const handleTogglePayment = async (re: any, memberId: string, amount: number, isPaid: boolean, paymentId: string | undefined) => {
-    if (currentRole !== 'owner') return;
-    
-    // We use a composite string to identify what's loading
-    const loadKey = `${re.id}-${memberId}`;
-    setLoadingPaymentId(loadKey);
-
-    try {
-      if (isPaid) {
-        // Delete payment
-        await supabase.from('scheduled_expense_payments').delete().eq('id', paymentId);
-        window.location.reload(); 
-      } else {
-        // 2. Insert scheduled payment checklist record (No settlements created for pending/ghost ledger approach)
-        await supabase.from('scheduled_expense_payments').insert({
-          recurring_expense_id: re.id,
-          cycle_date: cycleDateStr,
-          member_id: memberId,
-          amount: amount,
-          marked_by: currentMemberId,
-        });
-        
-        window.location.reload();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingPaymentId(null);
-    }
-  };
-
   if (recurringExpenses.length === 0 && currentRole !== 'owner') {
-    return null; // Don't show if empty and not owner
+    return null;
   }
 
   return (
@@ -121,173 +90,158 @@ export default function MonthlyFixedExpenses({
           </div>
           <h3 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>Scheduled Expenses</h3>
         </div>
-        
-        {currentRole === 'owner' && (
-          <button onClick={onManage} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
-            Manage
-          </button>
-        )}
-      </div>
 
-      {/* Month Navigation */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '16px',
-        padding: '16px',
-        background: 'var(--bg-card)'
-      }}>
-        <button onClick={() => changeMonth(-1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}>
-          <AnimatedIcon animationType="none"><ChevronLeft size={20} color="currentColor" /></AnimatedIcon>
-        </button>
-        <span style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', minWidth: '120px', textAlign: 'center' }}>
-          {monthString}
-        </span>
-        <button onClick={() => changeMonth(1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}>
-          <AnimatedIcon animationType="none"><ChevronRight size={20} color="currentColor" /></AnimatedIcon>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={() => changeMonth(-1)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+            <ChevronLeft size={18} />
+          </button>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', minWidth: '90px', textAlign: 'center' }}>
+            {monthString}
+          </span>
+          <button onClick={() => changeMonth(1)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
       {/* List */}
-      <div style={{ padding: '0 20px 20px 20px' }}>
+      <div style={{ padding: '0' }}>
         {activeForMonth.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '14px' }}>
-            No scheduled expenses configured for this month.
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+            No active scheduled expenses for this month.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {activeForMonth.map(re => {
-              const payments = re.scheduled_expense_payments || [];
-              const splits = re.recurring_expense_splits || [];
-              const isExpanded = expandedExpenses[re.id];
-              
-              const paidCount = splits.filter((split: any) => 
-                payments.some((p: any) => p.member_id === split.member_id && p.cycle_date === cycleDateStr)
-              ).length;
-              const totalCount = splits.length;
+          activeForMonth.map((expense) => {
+            // Find if this cycle is settled in the ledger
+            const settledLedgerEntry = expenses.find((e: any) => e.recurring_expense_id === expense.id && e.cycle_date === cycleDateStr);
+            const isSettled = !!settledLedgerEntry;
+            const isExpanded = expandedExpenses[expense.id];
 
-              return (
-                <div key={re.id} style={{
-                  background: 'var(--bg-hover)',
-                  borderRadius: '16px',
-                  border: '1px solid var(--border-subtle)',
-                  overflow: 'hidden'
-                }}>
-                  {/* Expense Header */}
-                  <div 
-                    onClick={() => toggleExpand(re.id)}
-                    style={{
-                      padding: '16px',
-                      borderBottom: isExpanded ? '1px solid var(--border-subtle)' : 'none',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer'
-                    }}
-                  >
+            return (
+              <div key={expense.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                {/* Clickable Header */}
+                <div 
+                  onClick={() => toggleExpand(expense.id)}
+                  style={{ 
+                    padding: '16px 20px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                    cursor: 'pointer',
+                    background: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    transition: 'background 0.2s'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ 
+                      width: '40px', height: '40px', borderRadius: '10px', 
+                      background: isSettled ? 'rgba(46, 204, 113, 0.1)' : 'rgba(243, 156, 18, 0.1)', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                    }}>
+                      {isSettled ? (
+                        <CheckCircle2 size={20} color="var(--success)" />
+                      ) : (
+                        <Calendar size={20} color="var(--warning)" />
+                      )}
+                    </div>
                     <div>
-                      <h4 style={{ fontWeight: 800, fontSize: '15px', color: 'white', wordBreak: 'break-word', marginBottom: '2px' }}>
-                        {re.name}
-                      </h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        Total: {currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}
+                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
+                      <p style={{ margin: 0, fontSize: '13px', color: isSettled ? 'var(--success)' : 'var(--text-muted)', marginTop: '2px' }}>
+                        {isSettled ? `Settled • Total: ${currencySymbol}${settledLedgerEntry.total_amount}` : `Pending • Target: ${currencySymbol}${expense.amount}`}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        fontSize: '12px', fontWeight: 700,
-                        color: paidCount === totalCount && totalCount > 0 ? 'var(--accent-success)' : 'var(--text-secondary)',
-                        background: paidCount === totalCount && totalCount > 0 ? 'rgba(0, 204, 102, 0.1)' : 'var(--bg-secondary)',
-                        padding: '4px 10px', borderRadius: '12px'
-                      }}>
-                        {paidCount}/{totalCount} Paid
-                      </div>
-                      <div style={{ color: 'var(--text-muted)' }}>
-                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Checklist */}
-                  {isExpanded && (
-                    <div style={{ padding: '8px 16px' }}>
-                    {splits.map((split: any) => {
-                      // Find if this member paid for this cycle
-                      const paymentRecord = payments.find((p: any) => p.member_id === split.member_id && p.cycle_date === cycleDateStr);
-                      const isPaid = !!paymentRecord;
-                      const isMe = split.member_id === currentMemberId;
-                      const isLoading = loadingPaymentId === `${re.id}-${split.member_id}`;
-
-                      return (
-                        <div key={split.member_id} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '12px 0',
-                          borderBottom: '1px solid var(--border-subtle)',
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                              {getMemberName(split.member_id).charAt(0)}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: isMe ? 800 : 600, fontSize: '14px', color: isMe ? 'white' : 'var(--text-primary)' }}>
-                                {getMemberName(split.member_id)} {isMe && '(you)'}
-                              </div>
-                              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                                Share: {currencySymbol}{Number(split.amount_owed).toFixed(2)}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            {currentRole === 'owner' ? (
-                              <button 
-                                onClick={() => handleTogglePayment(re, split.member_id, split.amount_owed, isPaid, paymentRecord?.id)}
-                                disabled={isLoading}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '6px',
-                                  padding: '6px 12px', borderRadius: '8px',
-                                  border: isPaid ? '1px solid rgba(0, 204, 102, 0.3)' : '1px solid var(--border-active)',
-                                  background: isPaid ? 'rgba(0, 204, 102, 0.1)' : 'transparent',
-                                  color: isPaid ? 'var(--accent-success)' : 'var(--text-secondary)',
-                                  cursor: isLoading ? 'wait' : 'pointer',
-                                  fontSize: '13px', fontWeight: 600,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                {isLoading ? (
-                                  <span style={{ opacity: 0.7 }}>...</span>
-                                ) : isPaid ? (
-                                  <><CheckCircle2 size={16} /> Paid</>
-                                ) : (
-                                  <><Circle size={16} /> Mark Paid</>
-                                )}
-                              </button>
-                            ) : (
-                              <div style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                padding: '6px 12px', borderRadius: '8px',
-                                background: isPaid ? 'rgba(0, 204, 102, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                                color: isPaid ? 'var(--accent-success)' : 'var(--text-muted)',
-                                fontSize: '13px', fontWeight: 600
-                              }}>
-                                {isPaid ? <><CheckCircle2 size={16} /> Paid</> : <><Circle size={16} /> Unpaid</>}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {isExpanded ? <ChevronUp size={20} color="var(--text-secondary)" /> : <ChevronDown size={20} color="var(--text-secondary)" />}
                   </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div style={{ padding: '0 20px 20px 72px', background: 'rgba(255,255,255,0.02)' }}>
+                    
+                    {isSettled ? (
+                      <div style={{ background: 'var(--bg-tertiary)', borderRadius: '12px', padding: '16px', marginTop: '8px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actual Payments</span>
+                          <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600 }}>Recorded in Ledger</span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {settledLedgerEntry.expense_payers?.map((payer: any) => (
+                            <div key={payer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
+                                <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                                  {getMemberName(payer.member_id)} {payer.member_id === currentMemberId && '(You)'}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                {currencySymbol}{payer.amount_paid}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                          This month has not been settled in the ledger yet.
+                        </div>
+                        {currentRole === 'owner' && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpenseToSettle(expense);
+                              setSettleModalOpen(true);
+                            }}
+                            style={{
+                              padding: '10px 16px', borderRadius: '8px', border: 'none',
+                              background: 'var(--accent-primary)', color: 'white',
+                              fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', gap: '6px'
+                            }}
+                          >
+                            <Edit3 size={16} />
+                            Settle Month
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
+
+      {/* Footer Manage Button */}
+      {currentRole === 'owner' && (
+        <div style={{ padding: '12px 20px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-subtle)' }}>
+          <button 
+            onClick={onManage}
+            style={{ 
+              width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-active)', 
+              background: 'transparent', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600, 
+              cursor: 'pointer' 
+            }}
+          >
+            Manage Scheduled Templates
+          </button>
+        </div>
+      )}
+
+      {/* Settlement Modal */}
+      <SettleMonthModal 
+        isOpen={settleModalOpen}
+        onClose={() => setSettleModalOpen(false)}
+        recurringExpense={expenseToSettle}
+        members={members}
+        currentCycleStr={cycleDateStr}
+        groupId={groupId}
+        currentMemberId={currentMemberId}
+      />
     </div>
   );
 }
