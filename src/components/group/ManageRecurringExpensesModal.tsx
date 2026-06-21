@@ -15,7 +15,7 @@ interface ManageRecurringExpensesModalProps {
 }
 
 type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
-const DEFAULT_EXPENSES = ['Rent', 'Water', 'Cylinder', 'Maid', 'Wifi'];
+const DEFAULT_EXPENSES = ['Rent', 'Water', 'Cylinder', 'Wifi'];
 
 export default function ManageRecurringExpensesModal({
   group,
@@ -235,7 +235,9 @@ export default function ManageRecurringExpensesModal({
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => handleEdit(re)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
-                    <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px', color: 'var(--accent-danger)' }}><Trash2 size={16} /></button>
+                    {re.name.toLowerCase() !== 'maid' && (
+                      <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px', color: 'var(--accent-danger)' }}><Trash2 size={16} /></button>
+                    )}
                   </div>
                 </div>
               ))}

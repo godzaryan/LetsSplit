@@ -101,6 +101,45 @@ export default function MaidDashboard({
     }
   };
 
+  const syncMaidRecurringExpense = async (salary: number, joinedDate: string) => {
+    try {
+      const { data: existingRE } = await supabase.from('recurring_expenses')
+        .select('*')
+        .eq('group_id', groupId)
+        .ilike('name', 'Maid')
+        .single();
+
+      if (existingRE) {
+        await supabase.from('recurring_expenses').update({
+          amount: salary,
+          is_active: true,
+          start_date: joinedDate
+        }).eq('id', existingRE.id);
+      } else {
+        const { data: newRE } = await supabase.from('recurring_expenses').insert({
+          group_id: groupId,
+          name: 'Maid',
+          amount: salary,
+          cycle: 'monthly',
+          start_date: joinedDate,
+          split_type: 'equal',
+          created_by: currentUserId
+        }).select().single();
+        
+        if (newRE) {
+          const splitRows = members.map(m => ({
+            recurring_expense_id: newRE.id,
+            member_id: m.id,
+            amount_owed: salary / members.length
+          }));
+          await supabase.from('recurring_expense_splits').insert(splitRows);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync scheduled expense:', err);
+    }
+  };
+
   const handleSaveConfig = async () => {
     if (!configName || !configSalary) return;
     try {
@@ -120,6 +159,9 @@ export default function MaidDashboard({
           joined_date: configJoinedDate
         });
       }
+      
+      await syncMaidRecurringExpense(parseFloat(configSalary), configJoinedDate);
+      
       setShowConfig(false);
       fetchMaidData();
     } catch (err) {
@@ -132,6 +174,13 @@ export default function MaidDashboard({
     if (!confirm('Are you sure you want to disable and delete this Maid configuration? This will delete all attendance records forever.')) return;
     try {
       await supabase.from('maids').delete().eq('id', maid.id);
+      
+      // Auto-deactivate the scheduled expense but keep history
+      await supabase.from('recurring_expenses')
+        .update({ is_active: false })
+        .eq('group_id', groupId)
+        .ilike('name', 'Maid');
+        
       setMaid(null);
       setAttendance([]);
       setBonuses([]);
