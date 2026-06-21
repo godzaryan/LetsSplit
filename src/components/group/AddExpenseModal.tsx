@@ -32,6 +32,7 @@ export default function AddExpenseModal({
   groupLabels,
   recurringTemplate,
   cycleDateStr,
+  recurringExpenses,
   onClose,
 }: AddExpenseModalProps) {
   const [description, setDescription] = useState(recurringTemplate?.name || initialData?.description || '');
