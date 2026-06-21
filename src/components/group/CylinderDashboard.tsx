@@ -98,26 +98,51 @@ export default function CylinderDashboard({
       }
     });
 
-    let avgMealsPerCylinder = 0;
+    let avgMealsPerCylinder = 90; // Default fallback if no history
+    let avgMealsPerDay = 2.0;     // Default fallback (e.g. 2 meals a day)
+    
     if (cylinderExpenses.length > 1) {
-      // We exclude the current cylinder from the average because it's not empty yet
-      // The historical meals consumed BEFORE the last purchase date:
+      const oldestPurchaseStr = cylinderExpenses[cylinderExpenses.length - 1].date;
+      const [oYear, oMonth, oDay] = oldestPurchaseStr.split('-').map(Number);
+      const oldestMidnight = new Date(oYear, oMonth - 1, oDay);
+      
+      const historyDiffTime = lastMidnight.getTime() - oldestMidnight.getTime();
+      let historicalDays = Math.floor(historyDiffTime / (1000 * 60 * 60 * 24));
+      if (historicalDays < 1) historicalDays = 1;
+
       let historicalMealsBeforeCurrent = 0;
       usageData.forEach(u => {
         const [uYear, uMonth, uDay] = u.date.split('-').map(Number);
         const uDate = new Date(uYear, uMonth - 1, uDay);
-        if (uDate < lastMidnight) {
+        if (uDate < lastMidnight && uDate >= oldestMidnight) {
           historicalMealsBeforeCurrent += (u.morning ? 1 : 0) + (u.afternoon ? 1 : 0) + (u.night ? 1 : 0);
         }
       });
-      avgMealsPerCylinder = Math.round(historicalMealsBeforeCurrent / (cylinderExpenses.length - 1));
+      
+      if (historicalMealsBeforeCurrent > 0) {
+        avgMealsPerCylinder = Math.round(historicalMealsBeforeCurrent / (cylinderExpenses.length - 1));
+        avgMealsPerDay = historicalMealsBeforeCurrent / historicalDays;
+      }
     }
+
+    const mealsRemaining = Math.max(0, avgMealsPerCylinder - currentCylinderMeals);
+    const daysRemaining = Math.ceil(mealsRemaining / avgMealsPerDay);
+    
+    const predictedDateObj = new Date(todayMidnight);
+    predictedDateObj.setDate(predictedDateObj.getDate() + daysRemaining);
+    
+    const progressPercentage = Math.min(100, Math.max(0, (currentCylinderMeals / avgMealsPerCylinder) * 100));
 
     return {
       totalSpent,
       daysSince,
       avgMealsPerCylinder,
       currentCylinderMeals,
+      avgMealsPerDay,
+      mealsRemaining,
+      daysRemaining,
+      progressPercentage,
+      predictedDateStr: predictedDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
       count: cylinderExpenses.length,
       lastPurchaseDate: lastPurchaseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
@@ -211,28 +236,37 @@ export default function CylinderDashboard({
     );
   }
 
-  const isLow = analytics && analytics.avgMealsPerCylinder > 0 && analytics.currentCylinderMeals >= analytics.avgMealsPerCylinder - 6;
-  const isOverdue = analytics && analytics.avgMealsPerCylinder > 0 && analytics.currentCylinderMeals > analytics.avgMealsPerCylinder;
+  const isLow = analytics && analytics.progressPercentage >= 80 && analytics.progressPercentage < 95;
+  const isOverdue = analytics && analytics.progressPercentage >= 95;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <AnimatedIcon animationType="hover-bounce"><Flame size={24} color="var(--accent-warning)" /></AnimatedIcon>
-          Cylinder Analytics
-          {currentRole === 'owner' && (
-            <button onClick={onManage} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', marginLeft: '4px' }}>
-              <Settings size={16} />
-            </button>
-          )}
-        </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 min-content' }}>
+          <AnimatedIcon animationType="hover-bounce">
+            <div style={{ padding: '8px', background: 'rgba(255, 171, 0, 0.1)', borderRadius: '12px', display: 'flex' }}>
+              <Flame size={24} color="var(--accent-warning)" />
+            </div>
+          </AnimatedIcon>
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, lineHeight: 1.2 }}>
+              Cylinder
+              {currentRole === 'owner' && (
+                <button onClick={onManage} className="icon-btn" style={{ padding: '4px', background: 'var(--bg-secondary)', borderRadius: '50%' }}>
+                  <Settings size={14} color="var(--text-muted)" />
+                </button>
+              )}
+            </h2>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Usage & Analytics</span>
+          </div>
+        </div>
         
         <button 
           onClick={() => onSettleCylinder(cylinderTemplate)}
           className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <Plus size={16} /> Log Replacement
         </button>
@@ -251,41 +285,60 @@ export default function CylinderDashboard({
       ) : (
         <>
           {/* Analytics Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
             {/* Status Card */}
             <div className="card" style={{ 
               padding: '24px', 
-              background: isOverdue ? 'rgba(230, 0, 0, 0.05)' : isLow ? 'rgba(255, 171, 0, 0.05)' : 'var(--bg-secondary)',
-              border: `1px solid ${isOverdue ? 'rgba(230, 0, 0, 0.3)' : isLow ? 'rgba(255, 171, 0, 0.3)' : 'var(--border-subtle)'}`
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              gridColumn: '1 / -1'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Current Cylinder Usage
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                    Current Cylinder Life
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+                    <div style={{ fontSize: '36px', fontWeight: 800, color: isOverdue ? 'var(--accent-danger)' : isLow ? 'var(--accent-warning)' : 'var(--text-primary)', lineHeight: 1 }}>
+                      {analytics.currentCylinderMeals}
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-muted)', paddingBottom: '4px' }}>
+                      / {analytics.avgMealsPerCylinder} meals
+                    </div>
+                  </div>
                 </div>
-                {isOverdue ? <AlertTriangle size={20} color="var(--accent-danger)" /> :
-                 isLow ? <AlertTriangle size={20} color="var(--accent-warning)" /> :
-                 <CheckCircle2 size={20} color="var(--accent-success)" />}
+                
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                    Est. Empty Date
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: isOverdue ? 'var(--accent-danger)' : 'var(--accent-primary)' }}>
+                    {analytics.predictedDateStr}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: isOverdue ? 'var(--accent-danger)' : isLow ? 'var(--accent-warning)' : 'var(--text-primary)', marginBottom: '4px' }}>
-                {analytics.currentCylinderMeals} <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>Meals Cooked</span>
+
+              {/* Progress Bar Container */}
+              <div style={{ position: 'relative', width: '100%', height: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0, left: 0, bottom: 0,
+                  width: `${analytics.progressPercentage}%`,
+                  background: isOverdue ? 'var(--accent-danger)' : isLow ? 'var(--accent-warning)' : 'var(--accent-success)',
+                  transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease',
+                  borderRadius: '6px'
+                }} />
               </div>
               
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px' }}>
-                <Clock size={14} /> 
-                {analytics.avgMealsPerCylinder > 0 
-                  ? `Avg Capacity: ${analytics.avgMealsPerCylinder} meals`
-                  : 'Gathering historical data...'}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+                  <Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
+                  {analytics.daysSince} days active
+                </span>
+                <span style={{ color: isOverdue ? 'var(--accent-danger)' : isLow ? 'var(--accent-warning)' : 'var(--text-secondary)', fontWeight: 600 }}>
+                  {analytics.mealsRemaining} meals remaining ({Math.max(0, analytics.daysRemaining)} days)
+                </span>
               </div>
-              
-              {(isLow || isOverdue) && (
-                <div style={{ 
-                  marginTop: '12px', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-                  background: isOverdue ? 'rgba(230, 0, 0, 0.1)' : 'rgba(255, 171, 0, 0.1)',
-                  color: isOverdue ? 'var(--accent-danger)' : 'var(--accent-warning)'
-                }}>
-                  {isOverdue ? 'Replacement is strictly overdue!' : 'Running low, order soon.'}
-                </div>
-              )}
             </div>
 
             {/* General Stats */}
