@@ -239,6 +239,8 @@ export default function GroupView({
   processedExpenses.sort((a, b) => {
     if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
     if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (sortBy === 'created-desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sortBy === 'created-asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     if (sortBy === 'amount-desc') return b.total_amount - a.total_amount;
     if (sortBy === 'amount-asc') return a.total_amount - b.total_amount;
     return 0;
@@ -432,8 +434,10 @@ export default function GroupView({
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
                         <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                          <option value="date-desc">Newest First</option>
-                          <option value="date-asc">Oldest First</option>
+                          <option value="date-desc">Expense Date (Newest)</option>
+                          <option value="date-asc">Expense Date (Oldest)</option>
+                          <option value="created-desc">Date Added (Newest)</option>
+                          <option value="created-asc">Date Added (Oldest)</option>
                           <option value="amount-desc">Highest Amount</option>
                           <option value="amount-asc">Lowest Amount</option>
                         </select>
