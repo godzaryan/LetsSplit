@@ -35,6 +35,7 @@ export default function MaidDashboard({
   const [configName, setConfigName] = useState('');
   const [configSalary, setConfigSalary] = useState('');
   const [configHolidays, setConfigHolidays] = useState('');
+  const [configJoinedDate, setConfigJoinedDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Bonus Form
   const [bonusAmount, setBonusAmount] = useState('');
@@ -63,6 +64,7 @@ export default function MaidDashboard({
         setConfigName(maidData.name);
         setConfigSalary(maidData.monthly_salary);
         setConfigHolidays(maidData.allowed_holidays_per_month);
+        setConfigJoinedDate(maidData.joined_date || new Date().toISOString().split('T')[0]);
       }
 
       if (maidData) {
@@ -104,18 +106,34 @@ export default function MaidDashboard({
         await supabase.from('maids').update({
           name: configName,
           monthly_salary: parseFloat(configSalary),
-          allowed_holidays_per_month: parseInt(configHolidays) || 0
+          allowed_holidays_per_month: parseInt(configHolidays) || 0,
+          joined_date: configJoinedDate
         }).eq('id', maid.id);
       } else {
         await supabase.from('maids').insert({
           group_id: groupId,
           name: configName,
           monthly_salary: parseFloat(configSalary),
-          allowed_holidays_per_month: parseInt(configHolidays) || 0
+          allowed_holidays_per_month: parseInt(configHolidays) || 0,
+          joined_date: configJoinedDate
         });
       }
       setShowConfig(false);
       fetchMaidData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteMaid = async () => {
+    if (!maid) return;
+    if (!confirm('Are you sure you want to disable and delete this Maid configuration? This will delete all attendance records forever.')) return;
+    try {
+      await supabase.from('maids').delete().eq('id', maid.id);
+      setMaid(null);
+      setAttendance([]);
+      setBonuses([]);
+      setShowConfig(false);
     } catch (err) {
       console.error(err);
     }
@@ -187,9 +205,25 @@ export default function MaidDashboard({
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const dailyRate = maid.monthly_salary / daysInMonth;
     
-    // By default, if a day is not marked present, it is considered absent.
+    // Calculate billable days in this month (handling joined_date)
+    let billableDaysInMonth = daysInMonth;
+    const joinedDate = new Date(maid.joined_date);
+    
+    // If the joined date is in a future month, payout is 0
+    if (joinedDate.getFullYear() > currentDate.getFullYear() || 
+        (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {
+      return { dailyRate, absences: 0, billableAbsences: 0, deduction: 0, totalBonuses: 0, finalPayout: 0 };
+    }
+    
+    // If the joined date is in the CURRENT viewed month, they didn't work the full month
+    if (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() === currentDate.getMonth()) {
+      const joinedDay = joinedDate.getDate();
+      billableDaysInMonth = daysInMonth - joinedDay + 1;
+    }
+    
+    // By default, if a day is not marked present (and is after joined_date), it is considered absent.
     const presents = attendance.filter(a => a.status === 'present').length;
-    const absences = daysInMonth - presents;
+    const absences = billableDaysInMonth - presents;
     
     const billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
     const deduction = billableAbsences * dailyRate;
@@ -224,10 +258,13 @@ export default function MaidDashboard({
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
       const att = attendance.find(a => a.date === dateStr);
+      
+      const isBeforeJoined = maid?.joined_date && dateStr < maid.joined_date;
+      
       days.push({
         day: i,
         dateStr,
-        status: att?.status === 'present' ? 'present' : 'absent'
+        status: isBeforeJoined ? 'disabled' : (att?.status === 'present' ? 'present' : 'absent')
       });
     }
     
@@ -312,14 +349,24 @@ export default function MaidDashboard({
               <input type="number" className="input-field" value={configSalary} onChange={e => setConfigSalary(e.target.value)} placeholder="0.00" />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Allowed Holidays / Month</label>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Holidays / Month</label>
               <input type="number" className="input-field" value={configHolidays} onChange={e => setConfigHolidays(e.target.value)} placeholder="0" />
             </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Joined Date</label>
+              <input type="date" className="input-field" value={configJoinedDate} onChange={e => setConfigJoinedDate(e.target.value)} />
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            {maid && <button className="btn-secondary" onClick={() => setShowConfig(false)}>Cancel</button>}
-            <button className="btn-primary" onClick={handleSaveConfig}><Save size={16} style={{ marginRight: '6px', display: 'inline' }} /> Save Configuration</button>
-          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+            {maid ? (
+              <button className="btn-secondary" onClick={handleDeleteMaid} style={{ color: 'var(--accent-danger)', borderColor: 'var(--accent-danger)' }}>
+                <Trash2 size={16} style={{ marginRight: '6px', display: 'inline' }} /> Disable Maid
+              </button>
+            ) : <div />}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {maid && <button className="btn-secondary" onClick={() => setShowConfig(false)}>Cancel</button>}
+              <button className="btn-primary" onClick={handleSaveConfig}><Save size={16} style={{ marginRight: '6px', display: 'inline' }} /> Save Configuration</button>
+            </div>
         </div>
       )}
 
@@ -383,6 +430,9 @@ export default function MaidDashboard({
                     bg = 'rgba(255, 26, 26, 0.1)';
                     color = 'var(--accent-danger)';
                     border = '1px solid rgba(255, 26, 26, 0.3)';
+                  } else if (day.status === 'disabled') {
+                    bg = 'transparent';
+                    color = 'rgba(255, 255, 255, 0.1)';
                   }
                   
                   const isToday = day.dateStr === new Date().toISOString().split('T')[0];
@@ -390,7 +440,8 @@ export default function MaidDashboard({
                   return (
                     <button
                       key={day.dateStr}
-                      onClick={() => handleToggleAttendance(day.dateStr)}
+                      onClick={() => day.status !== 'disabled' && handleToggleAttendance(day.dateStr)}
+                      disabled={day.status === 'disabled'}
                       style={{
                         padding: '12px 0',
                         background: bg,
@@ -398,7 +449,7 @@ export default function MaidDashboard({
                         borderRadius: '8px',
                         color,
                         fontWeight: day.status !== 'none' || isToday ? 700 : 500,
-                        cursor: 'pointer',
+                        cursor: day.status === 'disabled' ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex',
                         flexDirection: 'column',
