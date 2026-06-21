@@ -417,23 +417,25 @@ input[type="number"] {
 }
 
 .hamburger {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: transparent;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border-active);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .hamburger:hover {
   background: var(--bg-hover);
-  border-color: var(--border-active);
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
 }
 
 .sidebar-desktop {
