@@ -205,39 +205,41 @@ export default function MaidDashboard({
     if (!maid) return null;
     
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    const dailyRate = maid.monthly_salary / daysInMonth;
     
-    // Calculate billable days in this month (handling joined_date)
+    // The core fix: Daily rate is based on required working days (excluding holidays)
+    const requiredDays = Math.max(1, daysInMonth - maid.allowed_holidays_per_month);
+    const dailyRate = maid.monthly_salary / requiredDays;
+    
+    // Calculate days they were actually employed this month
     let billableDaysInMonth = daysInMonth;
     const joinedDate = new Date(maid.joined_date);
     
-    // If the joined date is in a future month, payout is 0
     if (joinedDate.getFullYear() > currentDate.getFullYear() || 
         (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {
-      return { dailyRate, absences: 0, billableAbsences: 0, deduction: 0, totalBonuses: 0, finalPayout: 0 };
+      return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
     }
     
-    // If the joined date is in the CURRENT viewed month, they didn't work the full month
     if (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() === currentDate.getMonth()) {
       const joinedDay = joinedDate.getDate();
       billableDaysInMonth = daysInMonth - joinedDay + 1;
     }
     
-    // By default, if a day is not marked present (and is after joined_date), it is considered absent.
     const presents = attendance.filter(a => a.status === 'present').length;
-    const absences = billableDaysInMonth - presents;
+    const absences = Math.max(0, billableDaysInMonth - presents);
+    
+    // Earned logic: Pay is built up by days present, capped at monthly salary
+    const basePayout = Math.min(maid.monthly_salary, presents * dailyRate);
     
     const billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
-    const deduction = billableAbsences * dailyRate;
     
     const totalBonuses = bonuses.reduce((sum, b) => sum + parseFloat(b.amount), 0);
-    const finalPayout = maid.monthly_salary - deduction + totalBonuses;
+    const finalPayout = basePayout + totalBonuses;
     
     return {
       dailyRate,
       absences,
       billableAbsences,
-      deduction,
+      basePayout,
       totalBonuses,
       finalPayout
     };
@@ -383,9 +385,8 @@ export default function MaidDashboard({
                 {currencySymbol}{calculations.finalPayout.toFixed(2)}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                Base: {currencySymbol}{maid.monthly_salary} 
-                {calculations.deduction > 0 && ` - Deductions: ${currencySymbol}${calculations.deduction.toFixed(2)}`}
-                {calculations.totalBonuses > 0 && ` + Bonus: ${currencySymbol}${calculations.totalBonuses.toFixed(2)}`}
+                Max Base: {currencySymbol}{maid.monthly_salary}
+                {calculations.totalBonuses > 0 && ` • Bonus: +${currencySymbol}${calculations.totalBonuses.toFixed(2)}`}
               </div>
             </div>
 
