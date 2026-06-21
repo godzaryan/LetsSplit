@@ -146,25 +146,25 @@ export default function MaidDashboard({
     try {
       if (existing && existing.status === 'present') {
         // Toggle to remove (absent)
-        await supabase.from('maid_attendance').delete().eq('id', existing.id);
-        setAttendance(attendance.filter(a => a.id !== existing.id));
+        await supabase.from('maid_attendance').delete().eq('maid_id', maid.id).eq('date', dateStr);
+        setAttendance(attendance.filter(a => a.date !== dateStr));
       } else {
-        // If it was somehow absent in db, delete it first
-        if (existing) {
-           await supabase.from('maid_attendance').delete().eq('id', existing.id);
-        }
+        // Ensure no leftover records exist to avoid 409 Conflict
+        await supabase.from('maid_attendance').delete().eq('maid_id', maid.id).eq('date', dateStr);
+        
         // Toggle to present
-        const { data } = await supabase.from('maid_attendance').insert({
+        const { data, error } = await supabase.from('maid_attendance').insert({
           maid_id: maid.id,
           date: dateStr,
           status: 'present',
           marked_by: currentMemberId
         }).select().single();
         
-        if (data) setAttendance([...attendance, data]);
+        if (error) throw error;
+        if (data) setAttendance([...attendance.filter(a => a.date !== dateStr), data]);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error toggling attendance:', err);
     }
   };
 
