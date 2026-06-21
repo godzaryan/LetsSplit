@@ -13,9 +13,10 @@ import BalanceSummary from './BalanceSummary';
 import AuditLogViewer from './AuditLogViewer';
 import MonthlyFixedExpenses from './MonthlyFixedExpenses';
 import ManageRecurringExpensesModal from './ManageRecurringExpensesModal';
+import MaidDashboard from './MaidDashboard';
 import { exportToCSV } from '@/lib/export';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List, UserCheck } from 'lucide-react';
 
 interface GroupViewProps {
   group: any;
@@ -38,7 +39,7 @@ export default function GroupView({
   currentRole,
   recurringExpenses = [],
 }: GroupViewProps) {
-  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'audit' | 'settings'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'maid' | 'audit' | 'settings'>('expenses');
   const [showManageRecurring, setShowManageRecurring] = useState(false);
   const [recurringToPay, setRecurringToPay] = useState<{template: any, cycleDateStr: string} | null>(null);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -214,6 +215,7 @@ export default function GroupView({
   const tabs = [
     { key: 'expenses', label: 'Expenses', icon: <AnimatedIcon animationType="hover-bounce"><ClipboardList size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'members', label: `Members (${members.length})`, icon: <AnimatedIcon animationType="hover-bounce"><Users size={16} color="currentColor" /></AnimatedIcon> },
+    { key: 'maid', label: 'Maid', icon: <AnimatedIcon animationType="hover-bounce"><UserCheck size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'audit', label: 'Audit Log', icon: <AnimatedIcon animationType="hover-bounce"><ScrollText size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'settings', label: 'Settings', icon: <AnimatedIcon animationType="rotate"><Settings size={16} color="currentColor" /></AnimatedIcon> },
   ];
@@ -513,6 +515,16 @@ export default function GroupView({
                 members={members}
                 currentUserId={currentUserId}
                 currentRole={currentRole}
+              />
+            )}
+
+            {activeTab === 'maid' && (
+              <MaidDashboard
+                groupId={group.id}
+                members={members}
+                currentMemberId={currentMemberId}
+                currentRole={currentRole}
+                currencySymbol={currencySymbol}
               />
             )}
 
