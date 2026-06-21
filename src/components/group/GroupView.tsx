@@ -14,9 +14,10 @@ import AuditLogViewer from './AuditLogViewer';
 import MonthlyFixedExpenses from './MonthlyFixedExpenses';
 import ManageRecurringExpensesModal from './ManageRecurringExpensesModal';
 import MaidDashboard from './MaidDashboard';
+import CylinderDashboard from './CylinderDashboard';
 import { exportToCSV } from '@/lib/export';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List, UserCheck } from 'lucide-react';
+import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List, UserCheck, Flame } from 'lucide-react';
 
 interface GroupViewProps {
   group: any;
@@ -39,7 +40,7 @@ export default function GroupView({
   currentRole,
   recurringExpenses = [],
 }: GroupViewProps) {
-  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'maid' | 'audit' | 'settings'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'maid' | 'cylinder' | 'audit' | 'settings'>('expenses');
   const [showManageRecurring, setShowManageRecurring] = useState(false);
   const [recurringToPay, setRecurringToPay] = useState<{template: any, cycleDateStr: string} | null>(null);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -218,6 +219,7 @@ export default function GroupView({
     { key: 'expenses', label: 'Expenses', icon: <AnimatedIcon animationType="hover-bounce"><ClipboardList size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'members', label: `Members (${members.length})`, icon: <AnimatedIcon animationType="hover-bounce"><Users size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'maid', label: 'Maid', icon: <AnimatedIcon animationType="hover-bounce"><UserCheck size={16} color="currentColor" /></AnimatedIcon> },
+    { key: 'cylinder', label: 'Cylinder', icon: <AnimatedIcon animationType="hover-bounce"><Flame size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'audit', label: 'Audit Log', icon: <AnimatedIcon animationType="hover-bounce"><ScrollText size={16} color="currentColor" /></AnimatedIcon> },
     { key: 'settings', label: 'Settings', icon: <AnimatedIcon animationType="rotate"><Settings size={16} color="currentColor" /></AnimatedIcon> },
   ];
@@ -570,6 +572,24 @@ export default function GroupView({
                 currentRole={currentRole}
                 currencySymbol={currencySymbol}
               />
+            )}
+
+            {activeTab === 'cylinder' && (
+              <div className="animate-fade-in">
+                <CylinderDashboard
+                  groupId={group.id}
+                  recurringExpenses={recurringExpenses}
+                  expenses={expenses}
+                  currencySymbol={currencySymbol}
+                  currentRole={currentRole}
+                  onManage={() => setShowManageRecurring(true)}
+                  onSettleCylinder={(cylinderTemplate) => {
+                    const todayDateStr = new Date().toLocaleDateString('en-CA');
+                    setRecurringToPay({ template: cylinderTemplate, cycleDateStr: todayDateStr });
+                    setShowAddExpense(true);
+                  }}
+                />
+              </div>
             )}
 
             {activeTab === 'audit' && (

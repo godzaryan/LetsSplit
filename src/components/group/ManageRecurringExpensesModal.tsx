@@ -130,11 +130,11 @@ export default function ManageRecurringExpensesModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isElectricity = name.trim().toLowerCase() === 'electricity bill';
-    const totalNum = isElectricity ? 0 : parseFloat(amount);
+    const isVariable = name.trim().toLowerCase() === 'electricity bill' || name.trim().toLowerCase() === 'cylinder';
+    const totalNum = isVariable ? 0 : parseFloat(amount);
     
     if (!name.trim()) return;
-    if (!isElectricity && (isNaN(totalNum) || totalNum <= 0)) {
+    if (!isVariable && (isNaN(totalNum) || totalNum <= 0)) {
       setError('Please enter a valid amount greater than 0');
       return;
     }
@@ -243,7 +243,7 @@ export default function ManageRecurringExpensesModal({
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => handleEdit(re)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
-                    {re.name.toLowerCase() !== 'maid' && re.name.toLowerCase() !== 'electricity bill' && (
+                    {re.name.toLowerCase() !== 'maid' && re.name.toLowerCase() !== 'electricity bill' && re.name.toLowerCase() !== 'cylinder' && (
                       <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px', color: 'var(--accent-danger)' }}><Trash2 size={16} /></button>
                     )}
                   </div>
@@ -285,11 +285,11 @@ export default function ManageRecurringExpensesModal({
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Bill Name</label>
-              <input type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Rent" disabled={name.toLowerCase() === 'electricity bill'} />
+              <input type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Rent" disabled={name.toLowerCase() === 'electricity bill' || name.toLowerCase() === 'cylinder'} />
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              {name.toLowerCase() !== 'electricity bill' && (
+              {name.toLowerCase() !== 'electricity bill' && name.toLowerCase() !== 'cylinder' && (
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Total Amount ({currencySymbol})</label>
                   <input type="number" className="input-field" value={amount} onChange={(e) => setAmount(e.target.value)} required min="0" step="0.01" placeholder="0.00" />

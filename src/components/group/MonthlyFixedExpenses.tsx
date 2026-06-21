@@ -53,6 +53,8 @@ export default function MonthlyFixedExpenses({
 
   const activeForMonth = useMemo(() => {
     return recurringExpenses.filter(re => {
+      if (re.name.toLowerCase() === 'cylinder') return false;
+      
       const start = new Date(re.start_date);
       const end = re.end_date ? new Date(re.end_date) : null;
       const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
