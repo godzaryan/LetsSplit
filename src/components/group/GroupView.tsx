@@ -11,6 +11,8 @@ import MembersPanel from './MembersPanel';
 import ExpenseCard from './ExpenseCard';
 import BalanceSummary from './BalanceSummary';
 import AuditLogViewer from './AuditLogViewer';
+import MonthlyFixedExpenses from './MonthlyFixedExpenses';
+import ManageRecurringExpensesModal from './ManageRecurringExpensesModal';
 import { exportToCSV } from '@/lib/export';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale } from 'lucide-react';
@@ -23,6 +25,7 @@ interface GroupViewProps {
   currentUserId: string;
   currentMemberId: string;
   currentRole: string;
+  recurringExpenses?: any[];
 }
 
 export default function GroupView({
@@ -33,8 +36,11 @@ export default function GroupView({
   currentUserId,
   currentMemberId,
   currentRole,
+  recurringExpenses = [],
 }: GroupViewProps) {
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members' | 'audit' | 'settings'>('expenses');
+  const [showManageRecurring, setShowManageRecurring] = useState(false);
+  const [recurringToPay, setRecurringToPay] = useState<{template: any, cycleDateStr: string} | null>(null);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showSettleUp, setShowSettleUp] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<any>(null);
@@ -295,6 +301,21 @@ export default function GroupView({
           <div style={{ minHeight: '400px' }}>
             {activeTab === 'expenses' && (
               <div className="animate-fade-in">
+                
+                {/* Recurring Expenses Monthly View */}
+                <MonthlyFixedExpenses
+                  recurringExpenses={recurringExpenses}
+                  expenses={expenses}
+                  currencySymbol={currencySymbol}
+                  currentRole={currentRole}
+                  onPay={(template, cycleDateStr) => {
+                    setRecurringToPay({ template, cycleDateStr });
+                    setExpenseToEdit(null);
+                    setShowAddExpense(true);
+                  }}
+                  onManage={() => setShowManageRecurring(true)}
+                />
+
                 {expenses.length > 0 && (
                   <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     <select 
@@ -412,10 +433,26 @@ export default function GroupView({
           currencySymbol={currencySymbol}
           currentMemberId={currentMemberId}
           initialData={expenseToEdit}
+          recurringTemplate={recurringToPay?.template}
+          cycleDateStr={recurringToPay?.cycleDateStr}
           groupLabels={group.labels || []}
           onClose={() => {
             setShowAddExpense(false);
             setExpenseToEdit(null);
+            setRecurringToPay(null);
+            router.refresh();
+          }}
+        />
+      )}
+      {showManageRecurring && (
+        <ManageRecurringExpensesModal
+          groupId={group.id}
+          members={members}
+          currencySymbol={currencySymbol}
+          currentMemberId={currentMemberId}
+          recurringExpenses={recurringExpenses}
+          onClose={() => {
+            setShowManageRecurring(false);
             router.refresh();
           }}
         />

@@ -14,6 +14,8 @@ interface AddExpenseModalProps {
   currentMemberId: string;
   initialData?: any;
   groupLabels: string[];
+  recurringTemplate?: any;
+  cycleDateStr?: string;
   onClose: () => void;
 }
 
@@ -27,12 +29,14 @@ export default function AddExpenseModal({
   currentMemberId,
   initialData,
   groupLabels,
+  recurringTemplate,
+  cycleDateStr,
   onClose,
 }: AddExpenseModalProps) {
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-  const [selectedLabels, setSelectedLabels] = useState<string[]>(initialData?.labels || []);
-  const [splitType, setSplitType] = useState<SplitType>(initialData?.split_type || 'equal');
+  const [description, setDescription] = useState(recurringTemplate?.name || initialData?.description || '');
+  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : (cycleDateStr || new Date().toISOString().split('T')[0]));
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(initialData?.labels || (recurringTemplate ? ['Fixed Expense'] : []));
+  const [splitType, setSplitType] = useState<SplitType>(recurringTemplate?.split_type || initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,7 +47,12 @@ export default function AddExpenseModal({
       initialData.expense_payers.forEach((payer: any) => p[payer.member_id] = String(payer.amount_paid));
       return p;
     }
-    return { [currentMemberId]: '' };
+    if (recurringTemplate?.recurring_expense_payers?.length) {
+      const p: Record<string, string> = {};
+      recurringTemplate.recurring_expense_payers.forEach((payer: any) => p[payer.member_id] = String(payer.amount_paid));
+      return p;
+    }
+    return { [currentMemberId]: recurringTemplate?.amount ? String(recurringTemplate.amount) : '' };
   });
 
   // Split state
@@ -51,6 +60,11 @@ export default function AddExpenseModal({
     if (initialData?.expense_splits?.length) {
       const s = new Set<string>();
       initialData.expense_splits.forEach((split: any) => s.add(split.member_id));
+      return s;
+    }
+    if (recurringTemplate?.recurring_expense_splits?.length) {
+      const s = new Set<string>();
+      recurringTemplate.recurring_expense_splits.forEach((split: any) => s.add(split.member_id));
       return s;
     }
     return new Set(members.map((m: any) => m.id));
@@ -62,6 +76,11 @@ export default function AddExpenseModal({
       initialData.expense_splits.forEach((split: any) => ex[split.member_id] = String(split.amount_owed));
       return ex;
     }
+    if (recurringTemplate?.split_type === 'exact' && recurringTemplate?.recurring_expense_splits?.length) {
+      const ex: Record<string, string> = {};
+      recurringTemplate.recurring_expense_splits.forEach((split: any) => ex[split.member_id] = String(split.amount_owed));
+      return ex;
+    }
     return {};
   });
 
@@ -71,6 +90,11 @@ export default function AddExpenseModal({
       initialData.expense_splits.forEach((split: any) => pc[split.member_id] = String(split.percentage));
       return pc;
     }
+    if (recurringTemplate?.split_type === 'percentage' && recurringTemplate?.recurring_expense_splits?.length) {
+      const pc: Record<string, string> = {};
+      recurringTemplate.recurring_expense_splits.forEach((split: any) => pc[split.member_id] = String(split.percentage));
+      return pc;
+    }
     return {};
   });
 
@@ -78,6 +102,11 @@ export default function AddExpenseModal({
     if (initialData?.split_type === 'shares' && initialData?.expense_splits?.length) {
       const sh: Record<string, string> = {};
       initialData.expense_splits.forEach((split: any) => sh[split.member_id] = String(split.shares));
+      return sh;
+    }
+    if (recurringTemplate?.split_type === 'shares' && recurringTemplate?.recurring_expense_splits?.length) {
+      const sh: Record<string, string> = {};
+      recurringTemplate.recurring_expense_splits.forEach((split: any) => sh[split.member_id] = String(split.shares));
       return sh;
     }
     return {};
@@ -219,6 +248,8 @@ export default function AddExpenseModal({
             split_type: splitType,
             date,
             created_by: currentMemberId,
+            recurring_expense_id: recurringTemplate?.id || null,
+            cycle_date: recurringTemplate ? cycleDateStr : null,
           })
           .select()
           .single();

@@ -64,6 +64,8 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       receipt_url,
       created_by,
       created_at,
+      recurring_expense_id,
+      cycle_date,
       expense_payers (
         id,
         member_id,
@@ -89,6 +91,34 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     .eq('group_id', groupId)
     .order('settled_at', { ascending: false });
 
+  // Fetch recurring expenses
+  const { data: recurringExpenses } = await supabase
+    .from('recurring_expenses')
+    .select(`
+      id,
+      name,
+      amount,
+      cycle,
+      start_date,
+      end_date,
+      split_type,
+      is_active,
+      recurring_expense_payers (
+        id,
+        member_id,
+        amount_paid
+      ),
+      recurring_expense_splits (
+        id,
+        member_id,
+        amount_owed,
+        percentage,
+        shares
+      )
+    `)
+    .eq('group_id', groupId)
+    .eq('is_active', true);
+
   // Get current user's membership
   const currentMember = members?.find((m: any) => m.user_id === user.id);
 
@@ -99,6 +129,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       group={group}
       members={members || []}
       expenses={expenses || []}
+      recurringExpenses={recurringExpenses || []}
       settlements={settlements || []}
       currentUserId={user.id}
       currentMemberId={currentMember.id}
