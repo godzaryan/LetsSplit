@@ -522,6 +522,7 @@ export default function GroupView({
               <MaidDashboard
                 groupId={group.id}
                 members={members}
+                currentUserId={currentUserId}
                 currentMemberId={currentMemberId}
                 currentRole={currentRole}
                 currencySymbol={currencySymbol}

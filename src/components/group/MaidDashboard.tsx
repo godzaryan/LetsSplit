@@ -8,6 +8,7 @@ import AnimatedIcon from '../ui/AnimatedIcon';
 interface MaidDashboardProps {
   groupId: string;
   members: any[];
+  currentUserId: string;
   currentMemberId: string;
   currentRole: string;
   currencySymbol: string;
@@ -16,6 +17,7 @@ interface MaidDashboardProps {
 export default function MaidDashboard({
   groupId,
   members,
+  currentUserId,
   currentMemberId,
   currentRole,
   currencySymbol
@@ -157,7 +159,7 @@ export default function MaidDashboard({
           maid_id: maid.id,
           date: dateStr,
           status: 'present',
-          marked_by: currentMemberId
+          marked_by: currentUserId
         }).select().single();
         
         if (error) throw error;
@@ -177,7 +179,7 @@ export default function MaidDashboard({
         month: cycleStr,
         amount: parseFloat(bonusAmount),
         reason: bonusReason,
-        added_by: currentMemberId
+        added_by: currentUserId
       }).select().single();
       
       if (data) setBonuses([...bonuses, data]);
