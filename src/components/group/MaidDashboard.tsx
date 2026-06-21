@@ -24,12 +24,14 @@ export default function MaidDashboard({
 }: MaidDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [maid, setMaid] = useState<any>(null);
+  const [allMaids, setAllMaids] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
   
   // UI State
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showConfig, setShowConfig] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [showBonus, setShowBonus] = useState(false);
   const [error, setError] = useState('');
   
@@ -52,32 +54,47 @@ export default function MaidDashboard({
   const fetchMaidData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Maid config
-      const { data: maidData, error: maidErr } = await supabase
+      // 1. Fetch All Maids config
+      const { data: maidsData, error: maidErr } = await supabase
         .from('maids')
         .select('*')
-        .eq('group_id', groupId)
-        .single();
+        .eq('group_id', groupId);
         
       if (maidErr && maidErr.code !== 'PGRST116') throw maidErr;
       
-      setMaid(maidData || null);
-      if (maidData) {
-        setConfigName(maidData.name);
-        setConfigSalary(maidData.monthly_salary);
-        setConfigHolidays(maidData.allowed_holidays_per_month);
-        setConfigJoinedDate(maidData.joined_date || new Date().toISOString().split('T')[0]);
+      setAllMaids(maidsData || []);
+      
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      let relevantMaid = null;
+      if (maidsData && maidsData.length > 0) {
+        const sortedMaids = [...maidsData].sort((a, b) => new Date(b.joined_date).getTime() - new Date(a.joined_date).getTime());
+        relevantMaid = sortedMaids.find(m => {
+          const joined = m.joined_date;
+          const left = m.left_date;
+          return joined <= endOfMonth && (!left || left >= startOfMonth);
+        });
+        if (!relevantMaid) {
+          relevantMaid = sortedMaids.find(m => m.is_active) || sortedMaids[0];
+        }
+      }
+      
+      setMaid(relevantMaid || null);
+      if (relevantMaid && !isAddingNew) {
+        setConfigName(relevantMaid.name);
+        setConfigSalary(relevantMaid.monthly_salary);
+        setConfigHolidays(relevantMaid.allowed_holidays_per_month);
+        setConfigJoinedDate(relevantMaid.joined_date || new Date().toISOString().split('T')[0]);
       }
 
-      if (maidData) {
+      if (relevantMaid) {
         // 2. Fetch Attendance for current month
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
         
         const { data: attData } = await supabase
           .from('maid_attendance')
           .select('*')
-          .eq('maid_id', maidData.id)
+          .eq('maid_id', relevantMaid.id)
           .gte('date', startOfMonth)
           .lte('date', endOfMonth);
           
@@ -88,7 +105,7 @@ export default function MaidDashboard({
         const { data: bonusData } = await supabase
           .from('maid_bonuses')
           .select('*')
-          .eq('maid_id', maidData.id)
+          .eq('maid_id', relevantMaid.id)
           .eq('month', cycleStr);
           
         setBonuses(bonusData || []);
@@ -153,7 +170,7 @@ export default function MaidDashboard({
   const handleSaveConfig = async () => {
     if (!configName || !configSalary) return;
     try {
-      if (maid) {
+      if (maid && !isAddingNew) {
         await supabase.from('maids').update({
           name: configName,
           monthly_salary: parseFloat(configSalary),
@@ -166,13 +183,16 @@ export default function MaidDashboard({
           name: configName,
           monthly_salary: parseFloat(configSalary),
           allowed_holidays_per_month: parseInt(configHolidays) || 0,
-          joined_date: configJoinedDate
+          joined_date: configJoinedDate,
+          is_active: true,
+          added_by: currentUserId
         });
       }
       
       await syncMaidRecurringExpense(parseFloat(configSalary), configJoinedDate);
       
       setShowConfig(false);
+      setIsAddingNew(false);
       fetchMaidData();
     } catch (err) {
       console.error(err);
@@ -181,9 +201,10 @@ export default function MaidDashboard({
 
   const handleDeleteMaid = async () => {
     if (!maid) return;
-    if (!confirm('Are you sure you want to disable and delete this Maid configuration? This will delete all attendance records forever.')) return;
+    if (!confirm('Are you sure you want to disable this Maid? They will be marked as inactive from today, but past history will be preserved.')) return;
     try {
-      await supabase.from('maids').delete().eq('id', maid.id);
+      const leftDate = new Date().toISOString().split('T')[0];
+      await supabase.from('maids').update({ is_active: false, left_date: leftDate }).eq('id', maid.id);
       
       // Auto-deactivate the scheduled expense but keep history
       await supabase.from('recurring_expenses')
@@ -191,10 +212,8 @@ export default function MaidDashboard({
         .eq('group_id', groupId)
         .ilike('name', 'Maid');
         
-      setMaid(null);
-      setAttendance([]);
-      setBonuses([]);
       setShowConfig(false);
+      fetchMaidData();
     } catch (err) {
       console.error(err);
     }
@@ -278,10 +297,27 @@ export default function MaidDashboard({
       return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
     }
     
-    if (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() === currentDate.getMonth()) {
+    let activeDaysInMonth = daysInMonth;
+    const isJoinedThisMonth = joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() === currentDate.getMonth();
+    if (isJoinedThisMonth) {
       const joinedDay = joinedDate.getDate();
-      billableDaysInMonth = daysInMonth - joinedDay + 1;
+      activeDaysInMonth = daysInMonth - joinedDay + 1;
     }
+    
+    if (maid.left_date) {
+      const leftDateObj = new Date(maid.left_date);
+      if (leftDateObj.getFullYear() < currentDate.getFullYear() || 
+          (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() < currentDate.getMonth())) {
+        return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
+      }
+      if (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() === currentDate.getMonth()) {
+        const leftDay = leftDateObj.getDate();
+        const joinedDay = isJoinedThisMonth ? joinedDate.getDate() : 1;
+        activeDaysInMonth = Math.max(0, leftDay - joinedDay + 1);
+      }
+    }
+    
+    billableDaysInMonth = activeDaysInMonth;
     
     const presents = attendance.filter(a => a.status === 'present').length;
     const absences = Math.max(0, billableDaysInMonth - presents);
@@ -372,14 +408,31 @@ export default function MaidDashboard({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
           {maid?.name || 'Maid Dashboard'}
+          {maid && !maid.is_active && (
+            <span style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '4px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inactive</span>
+          )}
           {currentRole === 'owner' && (
-            <button onClick={() => setShowConfig(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+            <button onClick={() => { setIsAddingNew(false); setShowConfig(true); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
               <Settings size={16} />
             </button>
           )}
         </h2>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '20px', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {maid && !maid.is_active && currentRole === 'owner' && !showConfig && (
+             <button onClick={() => {
+                setIsAddingNew(true);
+                setConfigName('');
+                setConfigSalary('');
+                setConfigHolidays('0');
+                setConfigJoinedDate(new Date().toISOString().split('T')[0]);
+                setShowConfig(true);
+             }} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+               + Add New Maid
+             </button>
+          )}
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '20px', border: '1px solid var(--border-subtle)' }}>
           <button 
             onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: '4px' }}
@@ -401,7 +454,7 @@ export default function MaidDashboard({
       {/* Config Form (if active) */}
       {showConfig && (
         <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-active)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>{maid ? 'Edit Configuration' : 'Configure Maid'}</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>{isAddingNew ? 'Add New Maid' : (maid ? 'Edit Configuration' : 'Configure Maid')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Maid Name</label>
@@ -421,16 +474,15 @@ export default function MaidDashboard({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
-            {maid ? (
-              <button className="btn-secondary" onClick={handleDeleteMaid} style={{ color: 'var(--accent-danger)', borderColor: 'var(--accent-danger)' }}>
-                <Trash2 size={16} style={{ marginRight: '6px', display: 'inline' }} /> Disable Maid
-              </button>
-            ) : <div />}
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {maid && <button className="btn-secondary" onClick={() => setShowConfig(false)}>Cancel</button>}
-              <button className="btn-primary" onClick={handleSaveConfig}><Save size={16} style={{ marginRight: '6px', display: 'inline' }} /> Save Configuration</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="btn-secondary" onClick={() => { setShowConfig(false); setIsAddingNew(false); }}>Cancel</button>
+              {!isAddingNew && maid && (
+                <button className="btn-secondary" style={{ color: 'var(--accent-danger)' }} onClick={handleDeleteMaid}>
+                  Disable Maid
+                </button>
+              )}
+              <button className="btn-primary" onClick={handleSaveConfig}>Save Configuration</button>
             </div>
-          </div>
         </div>
       )}
 
