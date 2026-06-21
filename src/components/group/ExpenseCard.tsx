@@ -29,7 +29,17 @@ export default function ExpenseCard({
 
   const payers = expense.expense_payers || [];
   const splits = expense.expense_splits || [];
-  const payerNames = payers.map((p: any) => getMemberName(p.member_id)).join(', ');
+  
+  let payerDisplay = 'Someone';
+  if (payers.length === 1) {
+    payerDisplay = getMemberName(payers[0].member_id);
+  } else if (payers.length === 2) {
+    // Two names usually fit well enough and are nice to see
+    payerDisplay = `${getMemberName(payers[0].member_id)} & ${getMemberName(payers[1].member_id)}`;
+  } else if (payers.length > 2) {
+    // 3 or more gets truncated
+    payerDisplay = `${getMemberName(payers[0].member_id)} + ${payers.length - 1} others`;
+  }
 
   // What does the current user owe or is owed?
   const myPaid = payers.find((p: any) => p.member_id === currentMemberId);
@@ -102,21 +112,27 @@ export default function ExpenseCard({
                 ))}
               </div>
             )}
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              Paid by <span style={{ color: 'var(--text-secondary)' }}>{payerNames}</span> · {new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-              <span style={{
-                marginLeft: '10px',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                background: 'rgba(230,0,0,0.1)',
-                fontSize: '11px',
-                color: 'var(--accent-primary-light)',
-                fontWeight: 600,
-                border: '1px solid rgba(230,0,0,0.15)',
-              }}>
-                {splitTypeLabels[expense.split_type] || expense.split_type}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                Paid by <strong style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{payerDisplay}</strong>
               </span>
-            </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  background: 'rgba(230,0,0,0.1)',
+                  fontSize: '11px',
+                  color: 'var(--accent-primary-light)',
+                  fontWeight: 600,
+                  border: '1px solid rgba(230,0,0,0.15)',
+                }}>
+                  {splitTypeLabels[expense.split_type] || expense.split_type}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
