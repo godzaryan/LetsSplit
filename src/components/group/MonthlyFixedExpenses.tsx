@@ -144,7 +144,10 @@ export default function MonthlyFixedExpenses({
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
                       <p style={{ margin: 0, fontSize: '13px', color: isSettled ? 'var(--accent-success)' : 'var(--text-muted)', marginTop: '2px' }}>
-                        {isSettled ? `Settled • Total: ${currencySymbol}${settledLedgerEntry.total_amount}` : `Pending • Target: ${currencySymbol}${expense.amount}`}
+                        {isSettled 
+                          ? `Settled • Total: ${currencySymbol}${settledLedgerEntry.total_amount}` 
+                          : `Pending • Target: ${Number(expense.amount) === 0 ? 'Variable' : `${currencySymbol}${expense.amount}`}`
+                        }
                       </p>
                     </div>
                   </div>

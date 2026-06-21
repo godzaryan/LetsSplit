@@ -15,7 +15,7 @@ interface ManageRecurringExpensesModalProps {
 }
 
 type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
-const DEFAULT_EXPENSES = ['Rent', 'Water', 'Cylinder', 'Wifi'];
+const DEFAULT_EXPENSES = ['Rent', 'Water', 'Cylinder', 'Wifi', 'Electricity Bill'];
 
 export default function ManageRecurringExpensesModal({
   group,
@@ -130,8 +130,14 @@ export default function ManageRecurringExpensesModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const totalNum = parseFloat(amount);
-    if (!name.trim() || totalNum <= 0) return;
+    const isElectricity = name.trim().toLowerCase() === 'electricity bill';
+    const totalNum = isElectricity ? 0 : parseFloat(amount);
+    
+    if (!name.trim()) return;
+    if (!isElectricity && (isNaN(totalNum) || totalNum <= 0)) {
+      setError('Please enter a valid amount greater than 0');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -230,12 +236,14 @@ export default function ManageRecurringExpensesModal({
                     </div>
                     <div>
                       <div style={{ fontWeight: 800, fontSize: '15px', color: 'white', wordBreak: 'break-word' }}>{re.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currencySymbol}{Number(re.amount).toFixed(2)} / {re.cycle}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {Number(re.amount) === 0 ? 'Variable' : `${currencySymbol}${Number(re.amount).toFixed(2)}`} / {re.cycle}
+                      </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => handleEdit(re)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Edit</button>
-                    {re.name.toLowerCase() !== 'maid' && (
+                    {re.name.toLowerCase() !== 'maid' && re.name.toLowerCase() !== 'electricity bill' && (
                       <button onClick={() => handleDeactivate(re.id)} className="btn-secondary" style={{ padding: '6px', color: 'var(--accent-danger)' }}><Trash2 size={16} /></button>
                     )}
                   </div>
@@ -277,14 +285,16 @@ export default function ManageRecurringExpensesModal({
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Bill Name</label>
-              <input type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Rent" />
+              <input type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Rent" disabled={name.toLowerCase() === 'electricity bill'} />
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Total Amount ({currencySymbol})</label>
-                <input type="number" className="input-field" value={amount} onChange={(e) => setAmount(e.target.value)} required min="0.01" step="0.01" placeholder="0.00" />
-              </div>
+              {name.toLowerCase() !== 'electricity bill' && (
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Total Amount ({currencySymbol})</label>
+                  <input type="number" className="input-field" value={amount} onChange={(e) => setAmount(e.target.value)} required min="0" step="0.01" placeholder="0.00" />
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Cycle</label>
                 <select className="input-field" value={cycle} onChange={(e) => setCycle(e.target.value)}>
