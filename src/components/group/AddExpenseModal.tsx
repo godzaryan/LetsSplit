@@ -418,9 +418,15 @@ export default function AddExpenseModal({
                   style={{ flex: 2, padding: '8px 12px', fontSize: '13px' }}
                 >
                   <option value="">-- None --</option>
-                  {recurringExpenses.map(re => (
-                    <option key={re.id} value={re.id}>{re.name}</option>
-                  ))}
+                  {recurringExpenses.map(re => {
+                    const startStr = new Date(re.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                    const endStr = re.end_date ? new Date(re.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Ongoing';
+                    return (
+                      <option key={re.id} value={re.id}>
+                        {re.name} ({startStr} - {endStr})
+                      </option>
+                    );
+                  })}
                 </select>
                 
                 {linkedRecurringId && (
