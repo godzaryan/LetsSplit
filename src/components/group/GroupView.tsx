@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddExpenseModal from './AddExpenseModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
@@ -15,7 +15,7 @@ import MonthlyFixedExpenses from './MonthlyFixedExpenses';
 import ManageRecurringExpensesModal from './ManageRecurringExpensesModal';
 import { exportToCSV } from '@/lib/export';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale } from 'lucide-react';
+import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List } from 'lucide-react';
 
 interface GroupViewProps {
   group: any;
@@ -47,8 +47,38 @@ export default function GroupView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  
+  // Advanced Filter State
+  const [searchQuery, setSearchQuery] = useState('');
   const [labelFilter, setLabelFilter] = useState('All');
+  const [memberFilter, setMemberFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
   const [sortBy, setSortBy] = useState('date-desc');
+  const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable');
+
+  const PREFS_KEY = `letssplit_prefs_${group.id}`;
+
+  // Load prefs on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PREFS_KEY);
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p.labelFilter) setLabelFilter(p.labelFilter);
+        if (p.memberFilter) setMemberFilter(p.memberFilter);
+        if (p.typeFilter) setTypeFilter(p.typeFilter);
+        if (p.sortBy) setSortBy(p.sortBy);
+        if (p.viewMode) setViewMode(p.viewMode);
+      }
+    } catch (e) {}
+  }, [PREFS_KEY]);
+
+  // Save prefs when they change
+  useEffect(() => {
+    const prefs = { labelFilter, memberFilter, typeFilter, sortBy, viewMode };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  }, [labelFilter, memberFilter, typeFilter, sortBy, viewMode, PREFS_KEY]);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -171,9 +201,41 @@ export default function GroupView({
   ];
 
   let processedExpenses = [...expenses];
+  
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    processedExpenses = processedExpenses.filter(e => 
+      e.description?.toLowerCase().includes(q) || 
+      e.category?.toLowerCase().includes(q)
+    );
+  }
+  
   if (labelFilter !== 'All') {
     processedExpenses = processedExpenses.filter(e => e.labels && e.labels.includes(labelFilter));
   }
+  
+  if (memberFilter !== 'All') {
+    processedExpenses = processedExpenses.filter(e => {
+      const paidBy = e.expense_payers?.some((p: any) => p.member_id === memberFilter);
+      const owes = e.expense_splits?.some((s: any) => s.member_id === memberFilter && s.amount_owed > 0);
+      return paidBy || owes;
+    });
+  }
+
+  if (typeFilter !== 'All') {
+    if (typeFilter === 'You Paid') {
+      processedExpenses = processedExpenses.filter(e => e.expense_payers?.some((p: any) => p.member_id === currentMemberId));
+    } else if (typeFilter === 'You Owe') {
+      processedExpenses = processedExpenses.filter(e => e.expense_splits?.some((s: any) => s.member_id === currentMemberId && s.amount_owed > 0));
+    } else if (typeFilter === 'Involved') {
+      processedExpenses = processedExpenses.filter(e => {
+        const paidBy = e.expense_payers?.some((p: any) => p.member_id === currentMemberId);
+        const owes = e.expense_splits?.some((s: any) => s.member_id === currentMemberId && s.amount_owed > 0);
+        return paidBy || owes;
+      });
+    }
+  }
+
   processedExpenses.sort((a, b) => {
     if (sortBy === 'date-desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
     if (sortBy === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -304,6 +366,7 @@ export default function GroupView({
                 
                 {/* Recurring Expenses Monthly View */}
                 <MonthlyFixedExpenses
+                  groupId={group.id}
                   recurringExpenses={recurringExpenses}
                   members={members}
                   currencySymbol={currencySymbol}
@@ -312,30 +375,71 @@ export default function GroupView({
                   onManage={() => setShowManageRecurring(true)}
                 />
 
+                {/* Advanced Filter Bar */}
                 {expenses.length > 0 && (
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <select 
-                      className="input-field" 
-                      style={{ flex: 1, minWidth: '120px' }}
-                      value={labelFilter}
-                      onChange={(e) => setLabelFilter(e.target.value)}
-                    >
-                      <option value="All">All Labels</option>
-                      {(group.labels || []).map((l: string) => (
-                        <option key={l} value={l}>{l}</option>
-                      ))}
-                    </select>
-                    <select 
-                      className="input-field" 
-                      style={{ flex: 1, minWidth: '120px' }}
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    >
-                      <option value="date-desc">Date (Newest first)</option>
-                      <option value="date-asc">Date (Oldest first)</option>
-                      <option value="amount-desc">Amount (Highest first)</option>
-                      <option value="amount-asc">Amount (Lowest first)</option>
-                    </select>
+                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '16px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    
+                    {/* Search & View Mode */}
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                          <Search size={16} />
+                        </div>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder="Search expenses..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          style={{ paddingLeft: '36px', width: '100%' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', background: 'var(--bg-card)', borderRadius: '12px', padding: '4px', border: '1px solid var(--border-subtle)' }}>
+                        <button onClick={() => setViewMode('comfortable')} style={{ padding: '6px 10px', borderRadius: '8px', background: viewMode === 'comfortable' ? 'rgba(108, 92, 231, 0.1)' : 'transparent', color: viewMode === 'comfortable' ? 'var(--accent-primary)' : 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+                          <LayoutGrid size={18} />
+                        </button>
+                        <button onClick={() => setViewMode('compact')} style={{ padding: '6px 10px', borderRadius: '8px', background: viewMode === 'compact' ? 'rgba(108, 92, 231, 0.1)' : 'transparent', color: viewMode === 'compact' ? 'var(--accent-primary)' : 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+                          <List size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filters & Sorting */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)}>
+                          <option value="All">All Labels</option>
+                          {(group.labels || []).map((l: string) => (
+                            <option key={l} value={l}>{l}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)}>
+                          <option value="All">Any Member</option>
+                          {members.map((m: any) => (
+                            <option key={m.id} value={m.id}>{getMemberName(m.id)}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                          <option value="All">All Types</option>
+                          <option value="Involved">I am involved</option>
+                          <option value="You Paid">I paid</option>
+                          <option value="You Owe">I owe</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                          <option value="date-desc">Newest First</option>
+                          <option value="date-asc">Oldest First</option>
+                          <option value="amount-desc">Highest Amount</option>
+                          <option value="amount-asc">Lowest Amount</option>
+                        </select>
+                      </div>
+                    </div>
+
                   </div>
                 )}
                 {processedExpenses.length === 0 ? (
@@ -366,6 +470,7 @@ export default function GroupView({
                         getMemberName={getMemberName}
                         currentMemberId={currentMemberId}
                         currentRole={currentRole}
+                        viewMode={viewMode}
                         onEdit={(exp) => { setExpenseToEdit(exp); setShowAddExpense(true); }}
                         onDelete={handleDeleteExpense}
                       />

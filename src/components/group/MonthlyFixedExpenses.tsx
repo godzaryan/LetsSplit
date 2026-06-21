@@ -6,6 +6,7 @@ import AnimatedIcon from '../ui/AnimatedIcon';
 import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MonthlyFixedExpensesProps {
+  groupId: string;
   recurringExpenses: any[];
   members: any[];
   currencySymbol: string;
@@ -15,6 +16,7 @@ interface MonthlyFixedExpensesProps {
 }
 
 export default function MonthlyFixedExpenses({
+  groupId,
   recurringExpenses,
   members,
   currencySymbol,
@@ -72,19 +74,40 @@ export default function MonthlyFixedExpenses({
 
     try {
       if (isPaid && paymentId) {
-        // Unmark paid
+        // 1. Fetch payment to get settlement_id
+        const { data: paymentRecord } = await supabase.from('scheduled_expense_payments').select('settlement_id').eq('id', paymentId).single();
+        
+        // 2. Delete payment
         await supabase.from('scheduled_expense_payments').delete().eq('id', paymentId);
-        // Optimistically remove from state by finding and mutating the object (since we are in client component, best practice is to let parent reload or mutate array if we pass a callback, but we can do a hard reload or emit an event. For now we will just reload the page to be safe, or we can use router.refresh)
+        
+        // 3. Delete settlement if exists
+        if (paymentRecord?.settlement_id) {
+          await supabase.from('settlements').delete().eq('id', paymentRecord.settlement_id);
+        }
+        
         window.location.reload(); 
       } else {
         // Mark paid
+        // 1. Create settlement
+        const { data: settlementData, error: stErr } = await supabase.from('settlements').insert({
+          group_id: groupId,
+          paid_by: memberId,
+          paid_to: currentMemberId, // Assuming owner is currentMemberId and they paid the base bill
+          amount: amount
+        }).select().single();
+        
+        if (stErr) throw stErr;
+
+        // 2. Insert scheduled payment checklist record
         await supabase.from('scheduled_expense_payments').insert({
           recurring_expense_id: re.id,
           cycle_date: cycleDateStr,
           member_id: memberId,
           amount: amount,
-          marked_by: currentMemberId
+          marked_by: currentMemberId,
+          settlement_id: settlementData.id
         });
+        
         window.location.reload();
       }
     } catch (err) {

@@ -13,6 +13,7 @@ interface ExpenseCardProps {
   currentRole: string;
   onEdit?: (expense: any) => void;
   onDelete?: (expenseId: string) => void;
+  viewMode?: 'comfortable' | 'compact';
 }
 
 export default function ExpenseCard({
@@ -24,6 +25,7 @@ export default function ExpenseCard({
   currentRole,
   onEdit,
   onDelete,
+  viewMode = 'comfortable',
 }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -61,13 +63,38 @@ export default function ExpenseCard({
       className="card"
       style={{
         cursor: 'pointer',
-        padding: '16px 20px',
+        padding: viewMode === 'compact' ? '12px 16px' : '16px 20px',
         transition: 'all 0.2s ease',
       }}
       onClick={() => setExpanded(!expanded)}
     >
       {/* Main row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {viewMode === 'compact' ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
+              <Receipt size={16} color="currentColor" />
+            </div>
+            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expense.description}</span>
+              <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <span>{new Date(expense.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                <span>•</span>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payerDisplay} paid</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>{currencySymbol}{Number(expense.total_amount).toFixed(2)}</div>
+            {myNet !== 0 && (
+              <div style={{ fontSize: '11px', fontWeight: 600, color: myNet > 0 ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
+                {myNet > 0 ? `+${currencySymbol}${myNet.toFixed(2)}` : `-${currencySymbol}${Math.abs(myNet).toFixed(2)}`}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
           {/* Icon */}
           <div style={{
@@ -151,7 +178,8 @@ export default function ExpenseCard({
             </p>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Expanded details */}
       {expanded && (

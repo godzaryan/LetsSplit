@@ -50,6 +50,11 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     redirect('/dashboard'); // Deny access to pending users
   }
 
+  // --- LAZY SYNC SCHEDULED EXPENSES ---
+  const today = new Date();
+  const currentCycleStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  await supabase.rpc('sync_scheduled_expenses', { g_id: groupId, target_cycle: currentCycleStr });
+
   // Fetch expenses (non-deleted)
   const { data: expenses } = await supabase
     .from('expenses')
