@@ -103,11 +103,16 @@ export default function MaidDashboard({
 
   const syncMaidRecurringExpense = async (salary: number, joinedDate: string) => {
     try {
-      const { data: existingRE } = await supabase.from('recurring_expenses')
+      const { data: existingRE, error: fetchErr } = await supabase.from('recurring_expenses')
         .select('*')
         .eq('group_id', groupId)
         .ilike('name', 'Maid')
-        .single();
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchErr) {
+        console.warn('Error fetching Maid expense:', fetchErr);
+      }
 
       if (existingRE) {
         await supabase.from('recurring_expenses').update({
@@ -116,7 +121,7 @@ export default function MaidDashboard({
           start_date: joinedDate
         }).eq('id', existingRE.id);
       } else {
-        const { data: newRE } = await supabase.from('recurring_expenses').insert({
+        const { data: newRE, error: insErr } = await supabase.from('recurring_expenses').insert({
           group_id: groupId,
           name: 'Maid',
           amount: salary,
@@ -125,6 +130,11 @@ export default function MaidDashboard({
           split_type: 'equal',
           created_by: currentUserId
         }).select().single();
+        
+        if (insErr) {
+          console.error('Failed to create Maid recurring expense:', insErr);
+          return;
+        }
         
         if (newRE) {
           const splitRows = members.map(m => ({
