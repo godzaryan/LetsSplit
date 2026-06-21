@@ -103,9 +103,11 @@ export default async function DashboardPage() {
           fontWeight: 800,
           letterSpacing: '-1px',
           marginBottom: '8px',
-          color: 'var(--text-primary)'
+          color: 'var(--text-primary)',
+          lineHeight: '1.2'
         }}>
-          Welcome back, <span className="gradient-text">{displayName}</span> 👋
+          Welcome back,<br />
+          <span className="gradient-text">{displayName}</span>
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
           Here&apos;s an overview of your expense groups and balances.
@@ -246,28 +248,7 @@ export default async function DashboardPage() {
         {/* Right Column (Creative Widgets) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Feature Spotlight Widget */}
-          <div className="card animate-fade-in" style={{ 
-            background: 'var(--gradient-hero)', 
-            border: '1px solid var(--border-active)',
-            padding: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            animationDelay: '400ms',
-          }}>
-            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'var(--accent-primary)', opacity: 0.2, filter: 'blur(40px)', borderRadius: '50%' }} />
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <span style={{ fontSize: '10px', fontWeight: 800, padding: '4px 8px', background: 'var(--accent-primary)', color: 'white', borderRadius: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>Coming Soon</span>
-            </div>
-            <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'white', marginBottom: '8px' }}>AI Receipt Scanner</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-              Say goodbye to manual data entry. Simply snap a picture of your dinner receipt, and LetsSplit will automatically detect the items and split them among your friends.
-            </p>
-            <button className="btn-secondary" style={{ width: '100%', fontSize: '13px', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }} disabled>
-              Notify Me When Live
-            </button>
-          </div>
+
 
           {/* Recent Activity Placeholder */}
           <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '500ms' }}>

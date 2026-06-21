@@ -81,9 +81,7 @@ export default function ExpenseCard({
               fontWeight: 700,
               fontSize: '15px',
               marginBottom: '4px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              wordBreak: 'break-word',
               color: 'var(--text-primary)',
             }}>
               {expense.description}

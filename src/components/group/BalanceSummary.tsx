@@ -101,9 +101,7 @@ export default function BalanceSummary({
                     fontSize: '13px',
                     color: 'var(--text-primary)',
                     display: 'block',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    wordBreak: 'break-word',
                   }}>
                     {getMemberName(debt.from)}
                     {debt.from === currentMemberId && ' (you)'}
@@ -131,9 +129,7 @@ export default function BalanceSummary({
                     fontSize: '13px',
                     color: 'var(--text-primary)',
                     display: 'block',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    wordBreak: 'break-word',
                   }}>
                     {getMemberName(debt.to)}
                     {debt.to === currentMemberId && ' (you)'}
@@ -173,9 +169,7 @@ export default function BalanceSummary({
                   fontSize: '13px',
                   fontWeight: member.id === currentMemberId ? 800 : 600,
                   color: member.id === currentMemberId ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  wordBreak: 'break-word',
                 }}>
                   {member.is_ghost ? member.ghost_name : member.users?.display_name || 'Unknown'}
                   {member.id === currentMemberId && ' (you)'}

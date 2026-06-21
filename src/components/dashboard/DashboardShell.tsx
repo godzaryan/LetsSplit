@@ -206,7 +206,7 @@ export default function DashboardShell({
                       getGroupInitial(group.name)
                     )}
                   </div>
-                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ wordBreak: 'break-word' }}>
                     {group.name}
                   </span>
                 </div>
@@ -270,7 +270,7 @@ export default function DashboardShell({
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
              <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: 500 }}>LetsSplit</span>
              <AnimatedIcon icon={ChevronRight} size={14} color="var(--text-muted)" animationType="none" />
-             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>
+             <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, wordBreak: 'break-word', maxWidth: '150px' }}>
                {pathname === '/dashboard' ? 'Overview' : groups.find(g => isGroupActive(g.id))?.name || 'Group'}
              </span>
           </div>

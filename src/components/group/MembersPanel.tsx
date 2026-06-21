@@ -275,9 +275,7 @@ export default function MembersPanel({
                     fontWeight: isSelf ? 800 : 600,
                     fontSize: '14px',
                     color: 'var(--text-primary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    wordBreak: 'break-word',
                   }}>
                     {name}{isSelf && ' (you)'}
                   </span>
@@ -299,9 +297,7 @@ export default function MembersPanel({
                     fontSize: '12px', 
                     color: 'var(--text-muted)', 
                     marginTop: '2px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    wordBreak: 'break-word'
                   }}>
                     {email}
                   </p>

@@ -685,7 +685,7 @@ export default function AddExpenseModal({
                   <img src={receiptPreview} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 500, wordBreak: 'break-word' }}>
                     {receiptFile.name}
                   </p>
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
