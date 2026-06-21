@@ -74,71 +74,77 @@ export default function BalanceSummary({
               <div key={i} style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '12px',
+                justifyContent: 'space-between',
+                padding: '16px',
                 background: 'var(--bg-hover)',
-                borderRadius: '12px',
+                borderRadius: '16px',
                 border: '1px solid var(--border-subtle)',
               }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', position: 'relative', width: '56px', height: '36px', flexShrink: 0 }}>
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      zIndex: 2,
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 26, 26, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      color: 'var(--accent-danger)',
+                      border: '2px solid var(--bg-hover)',
+                    }}>
+                      {getMemberName(debt.from).charAt(0)}
+                    </div>
+                    <div style={{
+                      position: 'absolute',
+                      left: '20px',
+                      zIndex: 1,
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 204, 102, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      color: 'var(--accent-success)',
+                      border: '2px solid var(--bg-hover)',
+                    }}>
+                      {getMemberName(debt.to).charAt(0)}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{
+                      fontWeight: debt.from === currentMemberId ? 800 : 600,
+                      fontSize: '14px',
+                      color: 'var(--text-primary)',
+                      overflowWrap: 'break-word',
+                      lineHeight: '1.4',
+                    }}>
+                      {getMemberName(debt.from)}{debt.from === currentMemberId && ' (you)'}
+                    </span>
+                    <span style={{
+                      fontSize: '13px',
+                      color: 'var(--text-muted)',
+                      marginTop: '2px',
+                    }}>
+                      owes <span style={{ color: 'var(--text-secondary)', fontWeight: 600, overflowWrap: 'break-word' }}>{getMemberName(debt.to)}{debt.to === currentMemberId && ' (you)'}</span>
+                    </span>
+                  </div>
+                </div>
+
                 <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 26, 26, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
                   fontWeight: 800,
-                  color: 'var(--accent-danger)',
-                  flexShrink: 0,
-                }}>
-                  {getMemberName(debt.from).charAt(0)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontWeight: debt.from === currentMemberId ? 800 : 600,
-                    fontSize: '13px',
-                    color: 'var(--text-primary)',
-                    display: 'block',
-                    overflowWrap: 'break-word',
-                  }}>
-                    {getMemberName(debt.from)}
-                    {debt.from === currentMemberId && ' (you)'}
-                  </span>
-                </div>
-                <div style={{ color: 'var(--accent-primary)', fontSize: '14px', fontWeight: 800 }}>→</div>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'rgba(0, 204, 102, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  color: 'var(--accent-success)',
-                  flexShrink: 0,
-                }}>
-                  {getMemberName(debt.to).charAt(0)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontWeight: debt.to === currentMemberId ? 800 : 600,
-                    fontSize: '13px',
-                    color: 'var(--text-primary)',
-                    display: 'block',
-                    overflowWrap: 'break-word',
-                  }}>
-                    {getMemberName(debt.to)}
-                    {debt.to === currentMemberId && ' (you)'}
-                  </span>
-                </div>
-                <div style={{
-                  fontWeight: 800,
-                  fontSize: '15px',
+                  fontSize: '16px',
                   color: 'var(--text-primary)',
+                  marginLeft: '12px',
                   flexShrink: 0,
                 }}>
                   {currencySymbol}{debt.amount.toFixed(2)}
