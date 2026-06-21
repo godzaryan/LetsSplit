@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import AnimatedIcon from '../ui/AnimatedIcon';
-import { Calendar, ChevronLeft, ChevronRight, CheckCircle2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, CheckCircle, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import SettleMonthModal from './SettleMonthModal';
 
 interface MonthlyFixedExpensesProps {
@@ -137,7 +137,7 @@ export default function MonthlyFixedExpenses({
                       display: 'flex', alignItems: 'center', justifyContent: 'center' 
                     }}>
                       {isSettled ? (
-                        <CheckCircle2 size={20} color="var(--success)" />
+                        <CheckCircle size={20} color="var(--success)" />
                       ) : (
                         <Calendar size={20} color="var(--warning)" />
                       )}
