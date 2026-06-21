@@ -448,6 +448,7 @@ export default function MaidDashboard({
           >
             <ChevronRightIcon />
           </button>
+          </div>
         </div>
       </div>
 
