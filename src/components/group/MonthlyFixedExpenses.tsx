@@ -124,10 +124,36 @@ export default function MonthlyFixedExpenses({
           </div>
         ) : (
           activeForMonth.map((expense) => {
-            // Find if this cycle is settled in the ledger
-            const settledLedgerEntry = expenses.find((e: any) => e.recurring_expense_id === expense.id && e.cycle_date === cycleDateStr);
-            const isSettled = !!settledLedgerEntry;
+            // Find all linked expenses for this cycle
+            const linkedExpenses = expenses.filter((e: any) => e.recurring_expense_id === expense.id && e.cycle_date === cycleDateStr);
+            const totalLinkedAmount = linkedExpenses.reduce((sum, e) => sum + Number(e.total_amount || 0), 0);
+            const targetAmount = Number(expense.amount || 0);
+
+            // Calculate settlement status
+            const isFullySettled = targetAmount > 0 ? totalLinkedAmount >= targetAmount : linkedExpenses.length > 0;
+            const isPartiallySettled = totalLinkedAmount > 0 && !isFullySettled;
             const isExpanded = expandedExpenses[expense.id];
+
+            let statusText = '';
+            if (isFullySettled) {
+              statusText = `Settled • Total: ${currencySymbol}${totalLinkedAmount}`;
+            } else if (isPartiallySettled) {
+              statusText = `Partially Settled • ${currencySymbol}${totalLinkedAmount} Paid • ${currencySymbol}${targetAmount - totalLinkedAmount} Left`;
+            } else {
+              statusText = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount}`}`;
+            }
+
+            // Aggregate payers from all linked expenses
+            const aggregatedPayers = linkedExpenses.reduce((acc: any, e: any) => {
+              e.expense_payers?.forEach((payer: any) => {
+                if (!acc[payer.member_id]) {
+                  acc[payer.member_id] = { ...payer, amount_paid: 0 };
+                }
+                acc[payer.member_id].amount_paid += Number(payer.amount_paid || 0);
+              });
+              return acc;
+            }, {});
+            const mergedPayers: any[] = Object.values(aggregatedPayers);
 
             return (
               <div key={expense.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
@@ -145,10 +171,10 @@ export default function MonthlyFixedExpenses({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ 
                       width: '40px', height: '40px', borderRadius: '10px', 
-                      background: isSettled ? 'rgba(0, 204, 102, 0.1)' : 'rgba(255, 170, 0, 0.1)', 
+                      background: isFullySettled ? 'rgba(0, 204, 102, 0.1)' : 'rgba(255, 170, 0, 0.1)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center' 
                     }}>
-                      {isSettled ? (
+                      {isFullySettled ? (
                         <CheckCircle size={20} color="var(--accent-success)" />
                       ) : (
                         <Calendar size={20} color="var(--accent-warning)" />
@@ -156,11 +182,8 @@ export default function MonthlyFixedExpenses({
                     </div>
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: isSettled ? 'var(--accent-success)' : 'var(--text-muted)', marginTop: '2px' }}>
-                        {isSettled 
-                          ? `Settled • Total: ${currencySymbol}${settledLedgerEntry.total_amount}` 
-                          : `Pending • Target: ${Number(expense.amount) === 0 ? 'Variable' : `${currencySymbol}${expense.amount}`}`
-                        }
+                      <p style={{ margin: 0, fontSize: '13px', color: isFullySettled ? 'var(--accent-success)' : isPartiallySettled ? 'var(--accent-warning)' : 'var(--text-muted)', marginTop: '2px' }}>
+                        {statusText}
                       </p>
                     </div>
                   </div>
@@ -174,18 +197,18 @@ export default function MonthlyFixedExpenses({
                 {isExpanded && (
                   <div style={{ padding: '0 20px 20px 72px', background: 'rgba(255,255,255,0.02)' }}>
                     
-                    {isSettled ? (
+                    {totalLinkedAmount > 0 ? (
                       <div style={{ background: 'var(--bg-tertiary)', borderRadius: '12px', padding: '16px', marginTop: '8px', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actual Payments</span>
-                          <span style={{ fontSize: '12px', color: 'var(--accent-success)', fontWeight: 600 }}>Recorded in Ledger</span>
+                          <span style={{ fontSize: '12px', color: isFullySettled ? 'var(--accent-success)' : 'var(--accent-warning)', fontWeight: 600 }}>Recorded in Ledger</span>
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {settledLedgerEntry.expense_payers?.map((payer: any) => (
-                            <div key={payer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          {mergedPayers.map((payer: any) => (
+                            <div key={payer.member_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-success)' }}></div>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isFullySettled ? 'var(--accent-success)' : 'var(--accent-warning)' }}></div>
                                 <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
                                   {getMemberName(payer.member_id)} {payer.member_id === currentMemberId && '(You)'}
                                 </span>
