@@ -58,7 +58,7 @@ export default function TermsAndConditionsPage() {
 
           <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '16px' }}>9. Contact Us</h2>
           <p>If you have any questions about these Terms, please contact us!</p>
-          <p><strong>Email:</strong> support@letssplit.com</p>
+          <p><strong>Email:</strong> godzaryan@gmail.com</p>
         </div>
       </div>
     </div>
