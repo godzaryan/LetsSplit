@@ -539,6 +539,7 @@ export default function GroupView({
                       <ExpenseCard
                         key={expense.id}
                         expense={expense}
+                        group={group}
                         members={members}
                         currencySymbol={currencySymbol}
                         getMemberName={getMemberName}

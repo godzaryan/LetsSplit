@@ -6,6 +6,7 @@ import { Receipt, Paperclip, Pencil, Trash2 } from 'lucide-react';
 
 interface ExpenseCardProps {
   expense: any;
+  group?: any;
   members: any[];
   currencySymbol: string;
   getMemberName: (id: string) => string;
@@ -18,6 +19,7 @@ interface ExpenseCardProps {
 
 export default function ExpenseCard({
   expense,
+  group,
   members,
   currencySymbol,
   getMemberName,
@@ -56,7 +58,13 @@ export default function ExpenseCard({
     itemized: 'Itemized',
   };
 
-  const canModify = currentRole === 'owner' || currentRole === 'admin' || expense.created_by === currentMemberId;
+  const isPayer = payers.some((p: any) => p.member_id === currentMemberId);
+  const canModify = 
+    group?.allow_any_member_to_edit_expenses ||
+    currentRole === 'owner' || 
+    currentRole === 'admin' || 
+    expense.created_by === currentMemberId ||
+    isPayer;
 
   return (
     <div
