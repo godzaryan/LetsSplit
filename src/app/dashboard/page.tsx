@@ -63,7 +63,7 @@ export default async function DashboardPage() {
       
       groupBalances[exp.group_id] = (groupBalances[exp.group_id] || 0) + (userPaid - userOwes);
       groupTotalSpend[exp.group_id] = (groupTotalSpend[exp.group_id] || 0) + Number(exp.total_amount);
-      groupMySpend[exp.group_id] = (groupMySpend[exp.group_id] || 0) + userOwes;
+      groupMySpend[exp.group_id] = (groupMySpend[exp.group_id] || 0) + userPaid;
 
       const expDate = new Date(exp.date);
       const isThisMonth = expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
@@ -346,7 +346,7 @@ export default async function DashboardPage() {
                         Total: {m.groups.currency}{total.toFixed(0)}
                       </p>
                       <p style={{ fontSize: '11px', color: 'var(--accent-warning)' }}>
-                        You: {m.groups.currency}{mySpend.toFixed(0)}
+                        You Paid: {m.groups.currency}{mySpend.toFixed(0)}
                       </p>
                     </div>
                   </a>
