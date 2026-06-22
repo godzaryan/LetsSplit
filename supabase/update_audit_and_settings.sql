@@ -51,7 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update Policies
+-- Update Policies for expenses
 DROP POLICY IF EXISTS "expenses_update" ON public.expenses;
 CREATE POLICY "expenses_update" ON public.expenses
   FOR UPDATE USING (public.can_edit_expense(group_id, id));
@@ -59,6 +59,32 @@ CREATE POLICY "expenses_update" ON public.expenses
 DROP POLICY IF EXISTS "expenses_delete" ON public.expenses;
 CREATE POLICY "expenses_delete" ON public.expenses
   FOR DELETE USING (public.can_edit_expense(group_id, id));
+
+-- Secure expense_payers
+DROP POLICY IF EXISTS "ep_insert" ON public.expense_payers;
+CREATE POLICY "ep_insert" ON public.expense_payers
+  FOR INSERT WITH CHECK (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
+
+DROP POLICY IF EXISTS "ep_update" ON public.expense_payers;
+CREATE POLICY "ep_update" ON public.expense_payers
+  FOR UPDATE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
+
+DROP POLICY IF EXISTS "ep_delete" ON public.expense_payers;
+CREATE POLICY "ep_delete" ON public.expense_payers
+  FOR DELETE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
+
+-- Secure expense_splits
+DROP POLICY IF EXISTS "es_insert" ON public.expense_splits;
+CREATE POLICY "es_insert" ON public.expense_splits
+  FOR INSERT WITH CHECK (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
+
+DROP POLICY IF EXISTS "es_update" ON public.expense_splits;
+CREATE POLICY "es_update" ON public.expense_splits
+  FOR UPDATE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
+
+DROP POLICY IF EXISTS "es_delete" ON public.expense_splits;
+CREATE POLICY "es_delete" ON public.expense_splits
+  FOR DELETE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 
 -- ============================================

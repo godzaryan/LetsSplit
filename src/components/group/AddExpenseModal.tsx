@@ -225,7 +225,7 @@ export default function AddExpenseModal({
 
       if (initialData) {
         // Update existing expense
-        const { error: expError } = await supabase
+        const { data: updatedExpense, error: expError } = await supabase
           .from('expenses')
           .update({
             description: description.trim(),
@@ -237,9 +237,11 @@ export default function AddExpenseModal({
             recurring_expense_id: linkedRecurringId || null,
             cycle_date: linkedRecurringId ? linkedCycleDate : null,
           })
-          .eq('id', expenseId);
+          .eq('id', expenseId)
+          .select()
+          .single();
 
-        if (expError) throw expError;
+        if (expError) throw new Error('You do not have permission to edit this expense or it no longer exists.');
 
         // Delete old payers and splits
         await supabase.from('expense_payers').delete().eq('expense_id', expenseId);

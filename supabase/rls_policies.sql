@@ -190,13 +190,13 @@ CREATE POLICY "ep_select" ON public.expense_payers
   FOR SELECT USING (is_group_member(get_expense_group(expense_id)));
 
 CREATE POLICY "ep_insert" ON public.expense_payers
-  FOR INSERT WITH CHECK (is_group_member(get_expense_group(expense_id)));
+  FOR INSERT WITH CHECK (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "ep_update" ON public.expense_payers
-  FOR UPDATE USING (is_group_member(get_expense_group(expense_id)));
+  FOR UPDATE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "ep_delete" ON public.expense_payers
-  FOR DELETE USING (is_group_member(get_expense_group(expense_id)));
+  FOR DELETE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 -- ============================================
 -- EXPENSE ITEMS POLICIES
@@ -205,13 +205,13 @@ CREATE POLICY "ei_select" ON public.expense_items
   FOR SELECT USING (is_group_member(get_expense_group(expense_id)));
 
 CREATE POLICY "ei_insert" ON public.expense_items
-  FOR INSERT WITH CHECK (is_group_member(get_expense_group(expense_id)));
+  FOR INSERT WITH CHECK (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "ei_update" ON public.expense_items
-  FOR UPDATE USING (is_group_member(get_expense_group(expense_id)));
+  FOR UPDATE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "ei_delete" ON public.expense_items
-  FOR DELETE USING (is_group_member(get_expense_group(expense_id)));
+  FOR DELETE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 -- ============================================
 -- EXPENSE SPLITS POLICIES
@@ -220,13 +220,13 @@ CREATE POLICY "es_select" ON public.expense_splits
   FOR SELECT USING (is_group_member(get_expense_group(expense_id)));
 
 CREATE POLICY "es_insert" ON public.expense_splits
-  FOR INSERT WITH CHECK (is_group_member(get_expense_group(expense_id)));
+  FOR INSERT WITH CHECK (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "es_update" ON public.expense_splits
-  FOR UPDATE USING (is_group_member(get_expense_group(expense_id)));
+  FOR UPDATE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 CREATE POLICY "es_delete" ON public.expense_splits
-  FOR DELETE USING (is_group_member(get_expense_group(expense_id)));
+  FOR DELETE USING (public.can_edit_expense(public.get_expense_group(expense_id), expense_id));
 
 -- ============================================
 -- SETTLEMENTS POLICIES
