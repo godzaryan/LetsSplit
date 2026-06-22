@@ -1,4 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 import "./globals.css";
 import GlobalLoader from "@/components/ui/GlobalLoader";
 import Footer from "@/components/ui/Footer";
