@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AnimatedIcon from '@/components/ui/AnimatedIcon';
-import { Users, Upload, Download, BarChart3, Rocket, Hand } from 'lucide-react';
+import { Users, Upload, Download, BarChart3, Rocket, Hand, TrendingUp, TrendingDown, CalendarClock, Tag, Trophy, ArrowRight } from 'lucide-react';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -28,13 +28,18 @@ export default async function DashboardPage() {
   let globalOwe = 0;
   let globalOwed = 0;
   let thisMonthSpend = 0;
+  let lastMonthSpend = 0;
+  let categorySpend: Record<string, number> = {};
+  let largestExpense: any = null;
+  let largestExpenseAmount = 0;
   let recentActivity: any[] = [];
+  const upcomingBills: { name: string, amount: number, groupId: string }[] = [];
 
   if (groupIds.length > 0) {
     const { data: expenses } = await supabase
       .from('expenses')
       .select(`
-        id, group_id, total_amount, date,
+        id, group_id, total_amount, date, description, labels,
         expense_payers ( member_id, amount_paid ),
         expense_splits ( member_id, amount_owed )
       `)
@@ -48,6 +53,7 @@ export default async function DashboardPage() {
 
     const groupBalances: Record<string, number> = {};
     const now = new Date();
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     expenses?.forEach((exp: any) => {
       const userPaid = exp.expense_payers?.filter((p: any) => userMemberIds.includes(p.member_id)).reduce((sum: number, p: any) => sum + Number(p.amount_paid), 0) || 0;
@@ -56,8 +62,30 @@ export default async function DashboardPage() {
       groupBalances[exp.group_id] = (groupBalances[exp.group_id] || 0) + (userPaid - userOwes);
 
       const expDate = new Date(exp.date);
-      if (expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()) {
+      const isThisMonth = expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
+      const isLastMonth = expDate.getMonth() === lastMonthDate.getMonth() && expDate.getFullYear() === lastMonthDate.getFullYear();
+
+      if (isThisMonth) {
         thisMonthSpend += userOwes;
+
+        // Categories tracking
+        if (userOwes > 0) {
+          if (exp.labels && exp.labels.length > 0) {
+            exp.labels.forEach((label: string) => {
+              categorySpend[label] = (categorySpend[label] || 0) + (userOwes / exp.labels.length);
+            });
+          } else {
+            categorySpend['Uncategorized'] = (categorySpend['Uncategorized'] || 0) + userOwes;
+          }
+
+          // Largest Expense
+          if (userOwes > largestExpenseAmount) {
+            largestExpenseAmount = userOwes;
+            largestExpense = exp;
+          }
+        }
+      } else if (isLastMonth) {
+        lastMonthSpend += userOwes;
       }
     });
 
@@ -83,7 +111,7 @@ export default async function DashboardPage() {
 
     const { data: recurring } = await supabase
       .from('recurring_expenses')
-      .select('id, amount, recurring_expense_splits(member_id, amount_owed)')
+      .select('id, name, amount, group_id, recurring_expense_splits(member_id, amount_owed)')
       .in('group_id', groupIds)
       .eq('is_active', true);
 
@@ -96,15 +124,19 @@ export default async function DashboardPage() {
       .eq('is_deleted', false);
 
     recurring?.forEach((r: any) => {
-      // If this cycle is already settled in the ledger, don't show it as visually pending
       const isSettled = settledExpenses?.some((e: any) => e.recurring_expense_id === r.id);
       
       if (!isSettled) {
+        let userShare = 0;
         r.recurring_expense_splits?.forEach((s: any) => {
           if (userMemberIds.includes(s.member_id)) {
-            unpaidScheduled += Number(s.amount_owed);
+            userShare += Number(s.amount_owed);
           }
         });
+        if (userShare > 0) {
+          upcomingBills.push({ name: r.name, amount: userShare, groupId: r.group_id });
+          unpaidScheduled += userShare;
+        }
       }
     });
 
@@ -124,9 +156,38 @@ export default async function DashboardPage() {
     recentActivity = logs || [];
   }
 
-  // Determine user's primary currency (default INR)
-  // In a real app we'd fetch this from user profile or use the most frequent group currency
   const currencySymbol = '₹';
+
+  // Calculate Spend Trend
+  let spendTrend = 0;
+  let spendTrendStr = 'No data last month';
+  let spendTrendColor = 'var(--text-muted)';
+  let SpendTrendIcon = TrendingUp;
+
+  if (lastMonthSpend > 0) {
+    spendTrend = ((thisMonthSpend - lastMonthSpend) / lastMonthSpend) * 100;
+    const formattedTrend = Math.abs(spendTrend).toFixed(1);
+    if (spendTrend > 0) {
+      spendTrendStr = `${formattedTrend}% more than last month`;
+      spendTrendColor = 'var(--accent-danger)';
+      SpendTrendIcon = TrendingUp;
+    } else {
+      spendTrendStr = `${formattedTrend}% less than last month`;
+      spendTrendColor = 'var(--accent-success)';
+      SpendTrendIcon = TrendingDown;
+    }
+  } else if (thisMonthSpend > 0) {
+    spendTrendStr = '100% more than last month';
+    spendTrendColor = 'var(--accent-danger)';
+    SpendTrendIcon = TrendingUp;
+  }
+
+  // Sort categories by amount
+  const sortedCategories = Object.entries(categorySpend)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5); // Top 5 categories
+  
+  const colors = ['#6c5ce7', '#00b894', '#fdcb6e', '#e17055', '#0984e3', '#e84393'];
 
   return (
     <div className="page-container">
@@ -240,7 +301,7 @@ export default async function DashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>Your Active Groups</h3>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 {memberships?.map((m: any, i: number) => (
                   <a key={m.groups.id} href={`/dashboard/group/${m.groups.id}`} className="card animate-fade-in" style={{
                     padding: '20px',
@@ -275,6 +336,41 @@ export default async function DashboardPage() {
                   </a>
                 ))}
               </div>
+
+              {/* Upcoming Scheduled Bills */}
+              {upcomingBills.length > 0 && (
+                <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '400ms' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <AnimatedIcon animationType="rotate"><CalendarClock size={20} color="var(--accent-warning)" /></AnimatedIcon>
+                    <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)' }}>Upcoming Bills</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {upcomingBills.map((bill, idx) => (
+                      <a key={idx} href={`/dashboard/group/${bill.groupId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div style={{ 
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                          padding: '12px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+                        >
+                          <div>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{bill.name}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Due this month</p>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-warning)' }}>
+                              {currencySymbol}{bill.amount.toFixed(2)}
+                            </p>
+                            <ArrowRight size={16} color="var(--text-muted)" />
+                          </div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -282,9 +378,76 @@ export default async function DashboardPage() {
         {/* Right Column (Creative Widgets) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Insights Panel */}
+          {totalGroups > 0 && (
+            <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '300ms' }}>
+              <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '20px' }}>Financial Insights</h3>
+              
+              {/* Spend Trend */}
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase' }}>Monthly Trend</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AnimatedIcon animationType="hover-bounce"><SpendTrendIcon size={20} color={spendTrendColor} /></AnimatedIcon>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: spendTrendColor }}>{spendTrendStr}</p>
+                </div>
+              </div>
 
+              {/* Largest Expense */}
+              {largestExpense && (
+                <div style={{ marginBottom: '24px' }}>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase' }}>Largest Expense</p>
+                  <div style={{ 
+                    background: 'linear-gradient(145deg, rgba(108, 92, 231, 0.1) 0%, rgba(108, 92, 231, 0.02) 100%)', 
+                    border: '1px solid rgba(108, 92, 231, 0.2)', 
+                    padding: '16px', 
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(108, 92, 231, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary-light)', flexShrink: 0 }}>
+                      <AnimatedIcon animationType="rotate"><Trophy size={18} color="currentColor" /></AnimatedIcon>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {largestExpense.description}
+                      </p>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your share: <span style={{ fontWeight: 600, color: 'var(--accent-primary-light)' }}>{currencySymbol}{largestExpenseAmount.toFixed(2)}</span></p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {/* Recent Activity Placeholder */}
+              {/* Categories */}
+              {sortedCategories.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase' }}>Top Categories</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {sortedCategories.map(([category, amount], idx) => {
+                      const percentage = (amount / thisMonthSpend) * 100;
+                      const color = colors[idx % colors.length];
+                      return (
+                        <div key={category}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Tag size={12} color={color} />
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{category}</span>
+                            </div>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{currencySymbol}{amount.toFixed(0)}</span>
+                          </div>
+                          <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percentage}%`, height: '100%', background: color, borderRadius: '3px', transition: 'width 1s ease-out' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Recent Activity */}
           <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '500ms' }}>
             <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '16px' }}>Recent Activity</h3>
             
