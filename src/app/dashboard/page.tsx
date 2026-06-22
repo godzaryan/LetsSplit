@@ -30,6 +30,8 @@ export default async function DashboardPage() {
   let thisMonthSpend = 0;
   let lastMonthSpend = 0;
   let categorySpend: Record<string, number> = {};
+  let groupTotalSpend: Record<string, number> = {};
+  let groupMySpend: Record<string, number> = {};
   let largestExpense: any = null;
   let largestExpenseAmount = 0;
   let recentActivity: any[] = [];
@@ -60,6 +62,8 @@ export default async function DashboardPage() {
       const userOwes = exp.expense_splits?.filter((s: any) => userMemberIds.includes(s.member_id)).reduce((sum: number, s: any) => sum + Number(s.amount_owed), 0) || 0;
       
       groupBalances[exp.group_id] = (groupBalances[exp.group_id] || 0) + (userPaid - userOwes);
+      groupTotalSpend[exp.group_id] = (groupTotalSpend[exp.group_id] || 0) + Number(exp.total_amount);
+      groupMySpend[exp.group_id] = (groupMySpend[exp.group_id] || 0) + userOwes;
 
       const expDate = new Date(exp.date);
       const isThisMonth = expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
@@ -302,7 +306,10 @@ export default async function DashboardPage() {
                 <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>Your Active Groups</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-                {memberships?.map((m: any, i: number) => (
+                {memberships?.map((m: any, i: number) => {
+                  const total = groupTotalSpend[m.groups.id] || 0;
+                  const mySpend = groupMySpend[m.groups.id] || 0;
+                  return (
                   <a key={m.groups.id} href={`/dashboard/group/${m.groups.id}`} className="card animate-fade-in" style={{
                     padding: '20px',
                     display: 'flex',
@@ -325,16 +332,25 @@ export default async function DashboardPage() {
                       justifyContent: 'center',
                       fontSize: '20px',
                       fontWeight: 700,
-                      color: 'var(--text-primary)'
+                      color: 'var(--text-primary)',
+                      flexShrink: 0
                     }}>
                       {m.groups.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <h4 style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>{m.groups.name}</h4>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.groups.name}</h4>
                       <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{m.groups.currency} Based</p>
                     </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                        Total: {m.groups.currency}{total.toFixed(0)}
+                      </p>
+                      <p style={{ fontSize: '11px', color: 'var(--accent-warning)' }}>
+                        You: {m.groups.currency}{mySpend.toFixed(0)}
+                      </p>
+                    </div>
                   </a>
-                ))}
+                )})}
               </div>
 
               {/* Upcoming Scheduled Bills */}
