@@ -134,13 +134,18 @@ export default function MonthlyFixedExpenses({
             const isPartiallySettled = totalLinkedAmount > 0 && !isFullySettled;
             const isExpanded = expandedExpenses[expense.id];
 
-            let statusText = '';
+            let statusNode: React.ReactNode = null;
             if (isFullySettled) {
-              statusText = `Settled • Total: ${currencySymbol}${totalLinkedAmount}`;
+              statusNode = `Settled • Total: ${currencySymbol}${totalLinkedAmount}`;
             } else if (isPartiallySettled) {
-              statusText = `Partially Settled • ${currencySymbol}${totalLinkedAmount} Paid • ${currencySymbol}${targetAmount - totalLinkedAmount} Left`;
+              statusNode = (
+                <span style={{ display: 'block', lineHeight: '1.4' }}>
+                  Partially Settled {currencySymbol}{totalLinkedAmount} Paid<br/>
+                  {currencySymbol}{targetAmount - totalLinkedAmount} Left
+                </span>
+              );
             } else {
-              statusText = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount}`}`;
+              statusNode = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount}`}`;
             }
 
             // Aggregate payers from all linked expenses
@@ -183,7 +188,7 @@ export default function MonthlyFixedExpenses({
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
                       <p style={{ margin: 0, fontSize: '13px', color: isFullySettled ? 'var(--accent-success)' : isPartiallySettled ? 'var(--accent-warning)' : 'var(--text-muted)', marginTop: '2px' }}>
-                        {statusText}
+                        {statusNode}
                       </p>
                     </div>
                   </div>
