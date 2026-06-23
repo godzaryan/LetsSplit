@@ -50,7 +50,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '16px' }}>8. Contact Us</h2>
           <p>If you have any questions, concerns, or just want to chat about how we handle your privacy, please don't hesitate to reach out. We're here to help!</p>
-          <p><strong>Email:</strong> godzaryan@gmail.com</p>
+          <p><strong>Email:</strong> support@letssplit.com</p>
         </div>
       </div>
     </div>

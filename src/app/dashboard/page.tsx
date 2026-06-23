@@ -305,49 +305,101 @@ export default async function DashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>Your Active Groups</h3>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginBottom: '32px' }}>
                 {memberships?.map((m: any, i: number) => {
                   const total = groupTotalSpend[m.groups.id] || 0;
                   const mySpend = groupMySpend[m.groups.id] || 0;
+                  const balance = groupBalances[m.groups.id] || 0;
                   return (
                   <a key={m.groups.id} href={`/dashboard/group/${m.groups.id}`} className="card animate-fade-in" style={{
-                    padding: '20px',
+                    padding: '24px',
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
+                    flexDirection: 'column',
+                    gap: '20px',
                     textDecoration: 'none',
                     color: 'inherit',
                     animationDelay: `${300 + (i * 50)}ms`,
                     animationFillMode: 'both',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      background: 'var(--bg-tertiary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      flexShrink: 0
-                    }}>
-                      {m.groups.name.charAt(0).toUpperCase()}
+                    background: 'linear-gradient(145deg, var(--bg-tertiary) 0%, rgba(108, 92, 231, 0.03) 100%)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '16px',
+                    transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(108, 92, 231, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  }}
+                  >
+                    {/* Decorative background element */}
+                    <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108, 92, 231, 0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '14px',
+                        background: 'rgba(108, 92, 231, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '22px',
+                        fontWeight: 800,
+                        color: 'var(--accent-primary-light)',
+                        boxShadow: 'inset 0 0 0 1px rgba(108, 92, 231, 0.2)',
+                        flexShrink: 0
+                      }}>
+                        {m.groups.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: '17px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{m.groups.name}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'var(--bg-secondary)', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            {m.groups.currency} Based
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.groups.name}</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{m.groups.currency} Based</p>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
-                        Total: {m.groups.currency}{total.toFixed(0)}
-                      </p>
-                      <p style={{ fontSize: '11px', color: 'var(--accent-warning)' }}>
-                        You Paid: {m.groups.currency}{mySpend.toFixed(0)}
-                      </p>
+
+                    <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)' }} />
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      <div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Total Spend</p>
+                        <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {m.groups.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        {balance === 0 ? (
+                          <>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Settled</p>
+                            <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-muted)' }}>All good</p>
+                          </>
+                        ) : balance > 0 ? (
+                          <>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>You are owed</p>
+                            <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-success)' }}>
+                              +{m.groups.currency}{balance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>You owe</p>
+                            <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-danger)' }}>
+                              -{m.groups.currency}{Math.abs(balance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </a>
                 )})}
