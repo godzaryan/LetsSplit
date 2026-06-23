@@ -327,17 +327,6 @@ export default async function DashboardPage() {
                     transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
                     position: 'relative',
                     overflow: 'hidden'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
-                    e.currentTarget.style.borderColor = 'rgba(108, 92, 231, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  }}
                   >
                     {/* Decorative background element */}
                     <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108, 92, 231, 0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
@@ -418,10 +407,6 @@ export default async function DashboardPage() {
                         <div style={{ 
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
                           padding: '12px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
                         >
                           <div>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{bill.name}</p>
