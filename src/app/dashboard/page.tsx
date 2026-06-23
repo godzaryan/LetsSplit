@@ -32,6 +32,7 @@ export default async function DashboardPage() {
   let categorySpend: Record<string, number> = {};
   let groupTotalSpend: Record<string, number> = {};
   let groupMySpend: Record<string, number> = {};
+  let groupBalances: Record<string, number> = {};
   let largestExpense: any = null;
   let largestExpenseAmount = 0;
   let recentActivity: any[] = [];
@@ -53,7 +54,6 @@ export default async function DashboardPage() {
       .select('*')
       .in('group_id', groupIds);
 
-    const groupBalances: Record<string, number> = {};
     const now = new Date();
     const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
