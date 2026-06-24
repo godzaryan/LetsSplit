@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -23,6 +24,9 @@ export const metadata: Metadata = {
       { url: '/money-bag.png', sizes: '180x180', type: 'image/png' },
     ],
   },
+  other: {
+    "google-adsense-account": "ca-pub-7359217244297308",
+  },
 };
 
 export default function RootLayout({
@@ -32,6 +36,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script 
+          async 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7359217244297308" 
+          crossOrigin="anonymous" 
+          strategy="afterInteractive"
+        />
+      </head>
       <body>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <GlobalLoader />
