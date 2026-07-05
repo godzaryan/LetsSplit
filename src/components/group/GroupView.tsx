@@ -201,8 +201,10 @@ export default function GroupView({
   const currentCycleStr = `${nowForCycle.getUTCFullYear()}-${String(nowForCycle.getUTCMonth() + 1).padStart(2, '0')}-01`;
   
   recurringExpenses?.forEach((r: any) => {
-    // Check if this cycle is already settled as a real expense
-    const isSettled = expenses.some((e: any) => e.recurring_expense_id === r.id && e.cycle_date === currentCycleStr);
+    const isSettled = expenses.some((e: any) => {
+      if (r.cycle === 'one-time') return e.recurring_expense_id === r.id;
+      return e.recurring_expense_id === r.id && e.cycle_date === currentCycleStr;
+    });
     
     if (!isSettled) {
       r.recurring_expense_splits?.forEach((s: any) => {

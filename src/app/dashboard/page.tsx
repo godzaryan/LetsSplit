@@ -115,20 +115,23 @@ export default async function DashboardPage() {
 
     const { data: recurring } = await supabase
       .from('recurring_expenses')
-      .select('id, name, amount, group_id, recurring_expense_splits(member_id, amount_owed)')
+      .select('id, name, amount, group_id, cycle, recurring_expense_splits(member_id, amount_owed)')
       .in('group_id', groupIds)
       .eq('is_active', true);
 
+    const recurringIds = recurring?.map((r: any) => r.id) || [];
+
     const { data: settledExpenses } = await supabase
       .from('expenses')
-      .select('recurring_expense_id')
-      .not('recurring_expense_id', 'is', null)
-      .eq('cycle_date', currentCycleStr)
-      .in('group_id', groupIds)
+      .select('recurring_expense_id, cycle_date')
+      .in('recurring_expense_id', recurringIds.length > 0 ? recurringIds : ['00000000-0000-0000-0000-000000000000'])
       .eq('is_deleted', false);
 
     recurring?.forEach((r: any) => {
-      const isSettled = settledExpenses?.some((e: any) => e.recurring_expense_id === r.id);
+      const isSettled = settledExpenses?.some((e: any) => {
+        if (r.cycle === 'one-time') return e.recurring_expense_id === r.id;
+        return e.recurring_expense_id === r.id && e.cycle_date === currentCycleStr;
+      });
       
       if (!isSettled) {
         let userShare = 0;
@@ -138,7 +141,7 @@ export default async function DashboardPage() {
           }
         });
         if (userShare > 0) {
-          upcomingBills.push({ name: r.name, amount: userShare, groupId: r.group_id });
+          upcomingBills.push({ name: r.name, amount: userShare, groupId: r.group_id, cycle: r.cycle });
           unpaidScheduled += userShare;
         }
       }
@@ -395,7 +398,6 @@ export default async function DashboardPage() {
                 )})}
               </div>
 
-              {/* Upcoming Scheduled Bills */}
               {upcomingBills.length > 0 && (
                 <div className="card animate-fade-in" style={{ padding: '24px', animationDelay: '400ms' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
@@ -403,7 +405,7 @@ export default async function DashboardPage() {
                     <h3 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)' }}>Upcoming Bills</h3>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {upcomingBills.map((bill, idx) => (
+                    {upcomingBills.map((bill: any, idx) => (
                       <a key={idx} href={`/dashboard/group/${bill.groupId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                         <div style={{ 
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
@@ -413,7 +415,9 @@ export default async function DashboardPage() {
                         >
                           <div>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{bill.name}</p>
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Due this month</p>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              {bill.cycle === 'one-time' ? 'One-time bill' : 'Due this month'}
+                            </p>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-warning)' }}>
