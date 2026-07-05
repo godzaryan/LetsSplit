@@ -17,9 +17,13 @@ export async function fetchMaidDataForMonth(supabase: SupabaseClient, groupId: s
   
   let relevantMaid = null;
   if (maidsData && maidsData.length > 0) {
-    const sortedMaids = [...maidsData].sort((a, b) => new Date(b.joined_date).getTime() - new Date(a.joined_date).getTime());
+    const sortedMaids = [...maidsData].sort((a, b) => {
+      const aTime = a.joined_date ? new Date(a.joined_date).getTime() : 0;
+      const bTime = b.joined_date ? new Date(b.joined_date).getTime() : 0;
+      return bTime - aTime;
+    });
     relevantMaid = sortedMaids.find(m => {
-      const joined = m.joined_date;
+      const joined = m.joined_date || startOfMonth; // default to start of month if missing
       const left = m.left_date;
       return joined <= endOfMonth && (!left || left >= startOfMonth);
     });
@@ -58,8 +62,14 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
   const requiredDays = Math.max(1, daysInMonth - maid.allowed_holidays_per_month);
   const dailyRate = maid.monthly_salary / requiredDays;
   
-  const [jYear, jMonth, jDay] = maid.joined_date.split('-').map(Number);
-  const joinedDate = new Date(jYear, jMonth - 1, jDay);
+  let joinedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); // default to start of month
+  if (maid.joined_date) {
+    const parts = maid.joined_date.split('-');
+    if (parts.length === 3) {
+      const [jYear, jMonth, jDay] = parts.map(Number);
+      joinedDate = new Date(jYear, jMonth - 1, jDay);
+    }
+  }
   
   if (joinedDate.getFullYear() > currentDate.getFullYear() || 
       (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {

@@ -10,6 +10,8 @@ async function handleRequest(request: NextRequest, { params }: { params: Promise
   const resolvedParams = await params;
   
   const url = new URL(request.url);
+  url.searchParams.delete('path'); // Next.js often injects dynamic route parameters into the query string
+
   // Construct the target URL using the path array and original search parameters
   const targetPath = resolvedParams.path ? resolvedParams.path.join('/') : '';
   const targetUrl = `${SUPABASE_URL}/${targetPath}${url.search}`;
