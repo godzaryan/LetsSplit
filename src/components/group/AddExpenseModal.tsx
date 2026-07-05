@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { uploadReceipt } from '@/lib/receipts';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Paperclip, X } from 'lucide-react';
@@ -46,6 +46,17 @@ export default function AddExpenseModal({
   const defaultCycleStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-01`;
   const [linkedRecurringId, setLinkedRecurringId] = useState<string>(initialData?.recurring_expense_id || recurringTemplate?.id || '');
   const [linkedCycleDate, setLinkedCycleDate] = useState<string>(initialData?.cycle_date || cycleDateStr || defaultCycleStr);
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    // Save original overflow
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
 
   // Payer state — who paid and how much
   const [payers, setPayers] = useState<Record<string, string>>(() => {
