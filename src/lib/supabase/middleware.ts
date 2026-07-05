@@ -10,6 +10,9 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        name: 'sb-letssplit-auth-token',
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -37,8 +40,9 @@ export async function updateSession(request: NextRequest) {
   // Protected routes — redirect to login if not authenticated
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isPublicPage = request.nextUrl.pathname === '/';
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api');
 
-  if (!user && !isAuthPage && !isPublicPage) {
+  if (!user && !isAuthPage && !isPublicPage && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     return NextResponse.redirect(url);

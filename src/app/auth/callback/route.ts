@@ -7,10 +7,13 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/dashboard';
 
   if (code) {
+    console.log("COOKIES IN CALLBACK:", request.headers.get("cookie"));
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
+    } else {
+      console.error("EXCHANGE CODE ERROR:", error);
     }
   }
 
