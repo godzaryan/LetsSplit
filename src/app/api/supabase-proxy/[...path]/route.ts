@@ -5,7 +5,7 @@ export const runtime = 'edge';
 // We pull the real Supabase URL directly from the environment variables.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
-async function handleRequest(request: NextRequest, { params }: { params: { path: string[] } }) {
+async function handleRequest(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   // Await the params resolution for Next.js 15+ compatibility
   const resolvedParams = await params;
   
