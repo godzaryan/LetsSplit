@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   let largestExpense: any = null;
   let largestExpenseAmount = 0;
   let recentActivity: any[] = [];
-  const upcomingBills: { name: string, amount: number, groupId: string }[] = [];
+  const upcomingBills: { name: string, amount: number, groupId: string, cycle: string }[] = [];
 
   if (groupIds.length > 0) {
     const { data: expenses } = await supabase
