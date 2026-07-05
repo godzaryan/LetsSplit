@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar as CalendarIcon, Settings, Plus, CheckCircle, XCircle, AlertCircle, Trash2, Edit3, Save } from 'lucide-react';
 import AnimatedIcon from '../ui/AnimatedIcon';
+import { fetchMaidDataForMonth, calculateMaidPayout } from '@/lib/services/maid';
 
 interface MaidDashboardProps {
   groupId: string;
@@ -54,65 +55,23 @@ export default function MaidDashboard({
   const fetchMaidData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch All Maids config
-      const { data: maidsData, error: maidErr } = await supabase
-        .from('maids')
-        .select('*')
-        .eq('group_id', groupId);
+      const data = await fetchMaidDataForMonth(supabase, groupId, currentDate);
+      if (data) {
+        setAllMaids([data.maid]); // Just a simple array for now if needed, or omit if unused
+        setMaid(data.maid);
+        setAttendance(data.attendance);
+        setBonuses(data.bonuses);
         
-      if (maidErr && maidErr.code !== 'PGRST116') throw maidErr;
-      
-      setAllMaids(maidsData || []);
-      
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1;
-      const daysInMonth = new Date(year, month, 0).getDate();
-      
-      const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
-      const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
-      
-      let relevantMaid = null;
-      if (maidsData && maidsData.length > 0) {
-        const sortedMaids = [...maidsData].sort((a, b) => new Date(b.joined_date).getTime() - new Date(a.joined_date).getTime());
-        relevantMaid = sortedMaids.find(m => {
-          const joined = m.joined_date;
-          const left = m.left_date;
-          return joined <= endOfMonth && (!left || left >= startOfMonth);
-        });
-        if (!relevantMaid) {
-          relevantMaid = sortedMaids.find(m => m.is_active) || sortedMaids[0];
+        if (!isAddingNew) {
+          setConfigName(data.maid.name);
+          setConfigSalary(data.maid.monthly_salary);
+          setConfigHolidays(data.maid.allowed_holidays_per_month);
+          setConfigJoinedDate(data.maid.joined_date || new Date().toLocaleDateString('en-CA'));
         }
-      }
-      
-      setMaid(relevantMaid || null);
-      if (relevantMaid && !isAddingNew) {
-        setConfigName(relevantMaid.name);
-        setConfigSalary(relevantMaid.monthly_salary);
-        setConfigHolidays(relevantMaid.allowed_holidays_per_month);
-        setConfigJoinedDate(relevantMaid.joined_date || new Date().toLocaleDateString('en-CA'));
-      }
-
-      if (relevantMaid) {
-        // 2. Fetch Attendance for current month
-        
-        const { data: attData } = await supabase
-          .from('maid_attendance')
-          .select('*')
-          .eq('maid_id', relevantMaid.id)
-          .gte('date', startOfMonth)
-          .lte('date', endOfMonth);
-          
-        setAttendance(attData || []);
-
-        // 3. Fetch Bonuses for current month
-        const cycleStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
-        const { data: bonusData } = await supabase
-          .from('maid_bonuses')
-          .select('*')
-          .eq('maid_id', relevantMaid.id)
-          .eq('month', cycleStr);
-          
-        setBonuses(bonusData || []);
+      } else {
+        setMaid(null);
+        setAttendance([]);
+        setBonuses([]);
       }
     } catch (err: any) {
       console.error(err);
@@ -284,68 +243,7 @@ export default function MaidDashboard({
 
   // Calculations
   const calculations = useMemo(() => {
-    if (!maid) return null;
-    
-    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    
-    // The core fix: Daily rate is based on required working days (excluding holidays)
-    const requiredDays = Math.max(1, daysInMonth - maid.allowed_holidays_per_month);
-    const dailyRate = maid.monthly_salary / requiredDays;
-    
-    // Calculate days they were actually employed this month
-    let billableDaysInMonth = daysInMonth;
-    
-    // Parse joined date manually to avoid UTC timezone shifts
-    const [jYear, jMonth, jDay] = maid.joined_date.split('-').map(Number);
-    const joinedDate = new Date(jYear, jMonth - 1, jDay);
-    
-    if (joinedDate.getFullYear() > currentDate.getFullYear() || 
-        (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {
-      return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
-    }
-    
-    let activeDaysInMonth = daysInMonth;
-    const isJoinedThisMonth = joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() === currentDate.getMonth();
-    if (isJoinedThisMonth) {
-      const joinedDay = joinedDate.getDate();
-      activeDaysInMonth = daysInMonth - joinedDay + 1;
-    }
-    
-    if (maid.left_date) {
-      const [lYear, lMonth, lDay] = maid.left_date.split('-').map(Number);
-      const leftDateObj = new Date(lYear, lMonth - 1, lDay);
-      if (leftDateObj.getFullYear() < currentDate.getFullYear() || 
-          (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() < currentDate.getMonth())) {
-        return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
-      }
-      if (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() === currentDate.getMonth()) {
-        const leftDay = leftDateObj.getDate();
-        const joinedDay = isJoinedThisMonth ? joinedDate.getDate() : 1;
-        activeDaysInMonth = Math.max(0, leftDay - joinedDay + 1);
-      }
-    }
-    
-    billableDaysInMonth = activeDaysInMonth;
-    
-    const presents = attendance.filter(a => a.status === 'present').length;
-    const absences = Math.max(0, billableDaysInMonth - presents);
-    
-    // Earned logic: Pay is built up by days present, capped at monthly salary
-    const basePayout = Math.min(maid.monthly_salary, presents * dailyRate);
-    
-    const billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
-    
-    const totalBonuses = bonuses.reduce((sum, b) => sum + parseFloat(b.amount), 0);
-    const finalPayout = basePayout + totalBonuses;
-    
-    return {
-      dailyRate,
-      absences,
-      billableAbsences,
-      basePayout,
-      totalBonuses,
-      finalPayout
-    };
+    return calculateMaidPayout(maid, attendance, bonuses, currentDate);
   }, [maid, attendance, bonuses, currentDate]);
 
   // Calendar Grid Generation

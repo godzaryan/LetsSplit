@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Calendar, ChevronLeft, ChevronRight, CheckCircle, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { fetchMaidDataForMonth, calculateMaidPayout } from '@/lib/services/maid';
 
 interface MonthlyFixedExpensesProps {
   groupId: string;
@@ -28,6 +30,7 @@ export default function MonthlyFixedExpenses({
   onSettleMonth
 }: MonthlyFixedExpensesProps) {
   const [expandedExpenses, setExpandedExpenses] = useState<Record<string, boolean>>({});
+  const [maidTargetAmount, setMaidTargetAmount] = useState<number | null>(null);
 
   // Start with current month
   const today = new Date();
@@ -76,6 +79,29 @@ export default function MonthlyFixedExpenses({
       return true;
     });
   }, [recurringExpenses, currentMonth]);
+
+  useEffect(() => {
+    const hasMaid = activeForMonth.some(e => e.name.toLowerCase() === 'maid');
+    if (hasMaid) {
+      const loadMaidData = async () => {
+        const supabase = createClient();
+        try {
+          const data = await fetchMaidDataForMonth(supabase, groupId, currentMonth);
+          if (data) {
+            const calc = calculateMaidPayout(data.maid, data.attendance, data.bonuses, currentMonth);
+            setMaidTargetAmount(calc ? calc.finalPayout : Number(data.maid.monthly_salary || 0));
+          } else {
+            setMaidTargetAmount(null);
+          }
+        } catch (e) {
+          console.error('Failed to load Maid data for month', e);
+        }
+      };
+      loadMaidData();
+    } else {
+      setMaidTargetAmount(null);
+    }
+  }, [activeForMonth, currentMonth, groupId]);
 
   if (recurringExpenses.length === 0 && currentRole !== 'owner') {
     return null;
@@ -127,7 +153,11 @@ export default function MonthlyFixedExpenses({
             // Find all linked expenses for this cycle
             const linkedExpenses = expenses.filter((e: any) => e.recurring_expense_id === expense.id && e.cycle_date === cycleDateStr);
             const totalLinkedAmount = linkedExpenses.reduce((sum, e) => sum + Number(e.total_amount || 0), 0);
-            const targetAmount = Number(expense.amount || 0);
+            
+            const isMaid = expense.name.toLowerCase() === 'maid';
+            const targetAmount = isMaid && maidTargetAmount !== null 
+              ? maidTargetAmount 
+              : Number(expense.amount || 0);
 
             // Calculate settlement status
             const isFullySettled = targetAmount > 0 ? totalLinkedAmount >= targetAmount : linkedExpenses.length > 0;
@@ -139,13 +169,20 @@ export default function MonthlyFixedExpenses({
               statusNode = `Settled • Total: ${currencySymbol}${totalLinkedAmount}`;
             } else if (isPartiallySettled) {
               statusNode = (
-                <span style={{ display: 'block', lineHeight: '1.4' }}>
-                  Partially Settled {currencySymbol}{totalLinkedAmount} Paid<br/>
-                  {currencySymbol}{targetAmount - totalLinkedAmount} Left
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                  <span style={{ fontWeight: 600 }}>Partially Settled</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 500 }}>
+                    <span style={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Paid: {currencySymbol}{totalLinkedAmount.toFixed(2)}
+                    </span>
+                    <span style={{ color: 'var(--accent-warning)', background: 'rgba(255, 170, 0, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Left: {currencySymbol}{Math.max(0, targetAmount - totalLinkedAmount).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               );
             } else {
-              statusNode = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount}`}`;
+              statusNode = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount.toFixed(2)}`}`;
             }
 
             // Aggregate payers from all linked expenses
