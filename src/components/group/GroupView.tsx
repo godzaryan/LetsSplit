@@ -709,6 +709,7 @@ export default function GroupView({
 // Group settings inline component
 function GroupSettings({ group, currentRole }: { group: any; currentRole: string }) {
   const [copied, setCopied] = useState(false);
+  const currencySymbol = group.currency === 'INR' ? '₹' : group.currency === 'USD' ? '$' : group.currency === 'EUR' ? '€' : '¤';
 
   const copyInviteCode = () => {
     navigator.clipboard.writeText(group.invite_code || '');
@@ -768,7 +769,7 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
           </div>
           <div>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Currency</span>
-            <p style={{ fontWeight: 500, marginTop: '2px' }}>{group.currency}</p>
+            <p style={{ fontWeight: 500, marginTop: '2px' }}>{currencySymbol}</p>
           </div>
           <div>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Created</span>

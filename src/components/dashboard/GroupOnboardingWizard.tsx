@@ -196,9 +196,9 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>Currency</label>
                 <select className="input-field" value={currency} onChange={e => setCurrency(e.target.value)}>
-                  <option value="INR">₹ INR</option>
-                  <option value="USD">$ USD</option>
-                  <option value="EUR">€ EUR</option>
+                  <option value="INR">₹</option>
+                  <option value="USD">$</option>
+                  <option value="EUR">€</option>
                 </select>
               </div>
             </div>
