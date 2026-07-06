@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Home, Zap, Users, Droplets, Wifi, Flame, ChevronRight, ChevronLeft, X } from 'lucide-react';
+import CustomSelect from '../ui/CustomSelect';
 
 export default function GroupOnboardingWizard({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(1);
@@ -195,11 +196,15 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>Currency</label>
-                <select className="input-field" value={currency} onChange={e => setCurrency(e.target.value)}>
-                  <option value="INR">₹</option>
-                  <option value="USD">$</option>
-                  <option value="EUR">€</option>
-                </select>
+                <CustomSelect
+                  value={currency}
+                  onChange={setCurrency}
+                  options={[
+                    { value: 'INR', label: '₹ Indian Rupee', sublabel: 'India' },
+                    { value: 'USD', label: '$ US Dollar', sublabel: 'United States' },
+                    { value: 'EUR', label: '€ Euro', sublabel: 'European Union' }
+                  ]}
+                />
               </div>
             </div>
           )}
@@ -334,10 +339,14 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Payment Type</label>
-                      <select className="input-field" value={maidPaymentType} onChange={e => setMaidPaymentType(e.target.value)}>
-                        <option value="fixed">Fixed Monthly</option>
-                        <option value="daily">Per Day Present</option>
-                      </select>
+                      <CustomSelect
+                        value={maidPaymentType}
+                        onChange={setMaidPaymentType}
+                        options={[
+                          { value: 'fixed', label: 'Fixed Monthly' },
+                          { value: 'daily', label: 'Per Day Present' }
+                        ]}
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Base Salary</label>

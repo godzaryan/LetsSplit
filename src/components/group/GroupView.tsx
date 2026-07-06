@@ -17,6 +17,7 @@ import MaidDashboard from './MaidDashboard';
 import CylinderDashboard from './CylinderDashboard';
 import { exportToCSV } from '@/lib/export';
 import AnimatedIcon from '../ui/AnimatedIcon';
+import CustomSelect from '../ui/CustomSelect';
 import { ClipboardList, Users, ScrollText, Settings, Upload, Receipt, Scale, Search, Filter, LayoutGrid, List, UserCheck, Flame } from 'lucide-react';
 
 interface GroupViewProps {
@@ -471,48 +472,64 @@ export default function GroupView({
                     {/* Filters & Sorting */}
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)}>
-                          <option value="All">All Labels</option>
-                          {(group.labels || []).map((l: string) => (
-                            <option key={l} value={l}>{l}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          value={labelFilter}
+                          onChange={setLabelFilter}
+                          options={[
+                            { value: 'All', label: 'All Labels' },
+                            ...(group.labels || []).map((l: string) => ({ value: l, label: l }))
+                          ]}
+                        />
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)}>
-                          <option value="All">Any Member</option>
-                          {members.map((m: any) => (
-                            <option key={m.id} value={m.id}>{getMemberName(m.id)}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          value={memberFilter}
+                          onChange={setMemberFilter}
+                          options={[
+                            { value: 'All', label: 'Any Member' },
+                            ...members.map((m: any) => ({ value: m.id, label: getMemberName(m.id) }))
+                          ]}
+                        />
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                          <option value="All">All Types</option>
-                          <option value="Involved">I am involved</option>
-                          <option value="You Paid">I paid</option>
-                          <option value="You Owe">I owe</option>
-                        </select>
+                        <CustomSelect
+                          value={typeFilter}
+                          onChange={setTypeFilter}
+                          options={[
+                            { value: 'All', label: 'All Types' },
+                            { value: 'Involved', label: 'I am involved' },
+                            { value: 'You Paid', label: 'I paid' },
+                            { value: 'You Owe', label: 'I owe' }
+                          ]}
+                        />
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
-                          <option value="All Time">All Time</option>
-                          <option value="This Month">This Month</option>
-                          <option value="Previous Month">Previous Month</option>
-                          <option value="Last 4 months">Last 4 months</option>
-                          <option value="Last 6 Months">Last 6 Months</option>
-                          <option value="Last 12 months">Last 12 months</option>
-                        </select>
+                        <CustomSelect
+                          value={timeFilter}
+                          onChange={setTimeFilter}
+                          options={[
+                            { value: 'All Time', label: 'All Time' },
+                            { value: 'This Month', label: 'This Month' },
+                            { value: 'Previous Month', label: 'Previous Month' },
+                            { value: 'Last 4 months', label: 'Last 4 months' },
+                            { value: 'Last 6 Months', label: 'Last 6 Months' },
+                            { value: 'Last 12 months', label: 'Last 12 months' }
+                          ]}
+                        />
                       </div>
                       <div style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <select className="input-field" style={{ width: '100%', fontSize: '13px' }} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                          <option value="date-desc">Expense Date (Newest)</option>
-                          <option value="date-asc">Expense Date (Oldest)</option>
-                          <option value="created-desc">Date Added (Newest)</option>
-                          <option value="created-asc">Date Added (Oldest)</option>
-                          <option value="amount-desc">Highest Amount</option>
-                          <option value="amount-asc">Lowest Amount</option>
-                        </select>
+                        <CustomSelect
+                          value={sortBy}
+                          onChange={setSortBy}
+                          options={[
+                            { value: 'date-desc', label: 'Expense Date (Newest)' },
+                            { value: 'date-asc', label: 'Expense Date (Oldest)' },
+                            { value: 'created-desc', label: 'Date Added (Newest)' },
+                            { value: 'created-asc', label: 'Date Added (Oldest)' },
+                            { value: 'amount-desc', label: 'Highest Amount' },
+                            { value: 'amount-asc', label: 'Lowest Amount' }
+                          ]}
+                        />
                       </div>
                     </div>
 
