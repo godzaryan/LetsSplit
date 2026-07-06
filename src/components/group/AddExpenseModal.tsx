@@ -359,8 +359,6 @@ export default function AddExpenseModal({
     }
   };
 
-  if (!mounted) return null;
-
   return createPortal(
     <div 
       style={{
