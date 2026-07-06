@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { X, CalendarClock, Settings, Trash2 } from 'lucide-react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface ManageRecurringExpensesModalProps {
   group: any;
@@ -28,6 +29,7 @@ export default function ManageRecurringExpensesModal({
   const [view, setView] = useState<'list' | 'form'>('list');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  useLockBodyScroll();
 
   // Form State
   const [editId, setEditId] = useState<string | null>(null);

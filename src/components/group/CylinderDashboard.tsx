@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Flame, Plus, Clock, History, Settings, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Sunrise, Sun, Moon, X } from 'lucide-react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface CylinderDashboardProps {
   groupId: string;
@@ -32,6 +33,7 @@ export default function CylinderDashboard({
   
   // Modal State
   const [selectedDay, setSelectedDay] = useState<{ dateStr: string, morning: boolean, afternoon: boolean, night: boolean } | null>(null);
+  useLockBodyScroll(!!selectedDay);
 
   const supabase = createClient();
 

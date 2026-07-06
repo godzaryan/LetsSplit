@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function ConfirmDialog({
   type = 'info',
   isAlert = false,
 }: ConfirmDialogProps) {
+  useLockBodyScroll(isOpen);
   if (!isOpen) return null;
 
   return (

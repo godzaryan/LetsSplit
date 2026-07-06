@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 export default function UpiPromptModal({ userId, onComplete }: { userId: string, onComplete: () => void }) {
+  useLockBodyScroll();
   const [upiId, setUpiId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

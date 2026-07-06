@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Home, Zap, Users, Droplets, Wifi, Flame, ChevronRight, ChevronLeft, X } from 'lucide-react';
 import CustomSelect from '../ui/CustomSelect';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 export default function GroupOnboardingWizard({ onClose }: { onClose: () => void }) {
+  useLockBodyScroll();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

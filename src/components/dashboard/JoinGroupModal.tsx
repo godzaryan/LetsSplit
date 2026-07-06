@@ -3,8 +3,10 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 export default function JoinGroupModal({ onClose }: { onClose: () => void }) {
+  useLockBodyScroll();
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

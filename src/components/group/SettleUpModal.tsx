@@ -6,6 +6,7 @@ import { generateUPILink } from '@/lib/payments';
 import PaymentQR from './PaymentQR';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Sparkles, Pencil, CheckCircle2, Rocket, QrCode } from 'lucide-react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface SettleUpModalProps {
   groupId: string;
@@ -28,6 +29,7 @@ export default function SettleUpModal({
   groupName = 'Group',
   onClose,
 }: SettleUpModalProps) {
+  useLockBodyScroll();
   const getMemberUpiId = (id: string) => {
     const member = members.find(m => m.id === id);
     return member?.users?.upi_id || '';

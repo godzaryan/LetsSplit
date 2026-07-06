@@ -5,6 +5,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { uploadReceipt } from '@/lib/receipts';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Paperclip, X } from 'lucide-react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface AddExpenseModalProps {
   groupId: string;
@@ -41,6 +42,7 @@ export default function AddExpenseModal({
   const [splitType, setSplitType] = useState<SplitType>(recurringTemplate?.split_type || initialData?.split_type || 'equal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  useLockBodyScroll();
 
   const todayDate = new Date();
   const defaultCycleStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-01`;
