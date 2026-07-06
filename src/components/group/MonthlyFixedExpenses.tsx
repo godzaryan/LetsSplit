@@ -259,9 +259,9 @@ export default function MonthlyFixedExpenses({
                     </div>
                     <div>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{expense.name}</h4>
-                      <p style={{ margin: 0, fontSize: '13px', color: isFullySettled ? 'var(--accent-success)' : isPartiallySettled ? 'var(--accent-warning)' : 'var(--text-muted)', marginTop: '2px' }}>
+                      <div style={{ margin: 0, fontSize: '13px', color: isFullySettled ? 'var(--accent-success)' : isPartiallySettled ? 'var(--accent-warning)' : 'var(--text-muted)', marginTop: '2px' }}>
                         {statusNode}
-                      </p>
+                      </div>
                     </div>
                   </div>
                   
