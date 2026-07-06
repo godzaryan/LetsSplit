@@ -49,18 +49,16 @@ export default function MaidDashboard({
         await supabase.from('maids').update({
           name: configName,
           monthly_salary: parseFloat(configSalary),
-          allowed_holidays_per_month: parseInt(configHolidays) || 0,
-          joined_date: configJoinedDate,
-          payment_type: configPaymentType
+          allowed_holidays_per_month: configPaymentType === 'daily' ? -1 : (parseInt(configHolidays) || 0),
+          joined_date: configJoinedDate
         }).eq('id', editingMaidId);
       } else {
         await supabase.from('maids').insert({
           group_id: groupId,
           name: configName,
           monthly_salary: parseFloat(configSalary),
-          allowed_holidays_per_month: parseInt(configHolidays) || 0,
+          allowed_holidays_per_month: configPaymentType === 'daily' ? -1 : (parseInt(configHolidays) || 0),
           joined_date: configJoinedDate,
-          payment_type: configPaymentType,
           is_active: true,
           added_by: currentUserId
         });
@@ -186,10 +184,10 @@ export default function MaidDashboard({
             onEdit={() => {
               setEditingMaidId(data.maid.id);
               setConfigName(data.maid.name);
-              setConfigSalary(data.maid.monthly_salary);
-              setConfigHolidays(data.maid.allowed_holidays_per_month);
-              setConfigJoinedDate(data.maid.joined_date || new Date().toLocaleDateString('en-CA'));
-              setConfigPaymentType(data.maid.payment_type || 'fixed');
+              setConfigSalary(data.maid.monthly_salary.toString());
+              setConfigPaymentType(data.maid.allowed_holidays_per_month === -1 ? 'daily' : 'fixed');
+              setConfigHolidays(data.maid.allowed_holidays_per_month === -1 ? '2' : data.maid.allowed_holidays_per_month.toString());
+              setConfigJoinedDate(data.maid.joined_date || new Date().toISOString().split('T')[0]);
               setIsAddingNew(false);
               setShowConfig(true);
             }}

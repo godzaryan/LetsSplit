@@ -98,7 +98,7 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
   let absences = 0;
   let billableAbsences = 0;
 
-  if (maid.payment_type === 'daily') {
+  if (maid.allowed_holidays_per_month === -1) {
     dailyRate = maid.monthly_salary; // For daily, 'monthly_salary' represents daily wage
     basePayout = presents * dailyRate;
   } else {

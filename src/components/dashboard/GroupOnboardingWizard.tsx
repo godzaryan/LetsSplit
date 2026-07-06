@@ -129,8 +129,7 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
           group_id: groupId,
           name: maidName.trim(),
           monthly_salary: parseFloat(maidSalary || '0'),
-          allowed_holidays_per_month: parseInt(maidHolidays || '0'),
-          payment_type: maidPaymentType,
+          allowed_holidays_per_month: maidPaymentType === 'daily' ? -1 : parseInt(maidHolidays || '0'),
           joined_date: maidStartDate,
           is_active: true
         });
