@@ -88,29 +88,29 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
       const recurringToInsert = [];
       if (rentEnabled && rentAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Rent', amount: parseFloat(rentAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id, is_variable: false
+          group_id: groupId, name: 'Rent', amount: parseFloat(rentAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id
         });
       }
       if (securityEnabled && securityAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Security Deposit', amount: parseFloat(securityAmount), cycle: 'one-time', start_date: currentYMD, created_by: user.id, is_variable: false
+          group_id: groupId, name: 'Security Deposit', amount: parseFloat(securityAmount), cycle: 'one-time', start_date: currentYMD, created_by: user.id
         });
       }
 
       // 4. Create Utilities
       if (elecEnabled) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Electricity Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id, is_variable: true
+          group_id: groupId, name: 'Electricity Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id
         });
       }
       if (waterEnabled) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Water Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id, is_variable: true
+          group_id: groupId, name: 'Water Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id
         });
       }
       if (wifiEnabled && wifiAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'WiFi Bill', amount: parseFloat(wifiAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id, is_variable: false
+          group_id: groupId, name: 'WiFi Bill', amount: parseFloat(wifiAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id
         });
       }
 
