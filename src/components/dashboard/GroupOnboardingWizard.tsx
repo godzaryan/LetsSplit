@@ -79,38 +79,42 @@ export default function GroupOnboardingWizard({ onClose }: { onClose: () => void
       const startOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1).toISOString().split('T')[0];
 
       // 2. Add Member
-      const { error: memberError } = await supabase
+      const { data: memberData, error: memberError } = await supabase
         .from('group_members')
-        .insert({ group_id: groupId, user_id: user.id, role: 'owner', added_by: user.id });
+        .insert({ group_id: groupId, user_id: user.id, role: 'owner', added_by: user.id })
+        .select()
+        .single();
       if (memberError) throw memberError;
+
+      const memberId = memberData.id;
 
       // 3. Create Rent & Security
       const recurringToInsert = [];
       if (rentEnabled && rentAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Rent', amount: parseFloat(rentAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id
+          group_id: groupId, name: 'Rent', amount: parseFloat(rentAmount), cycle: 'monthly', start_date: startOfMonth, created_by: memberId
         });
       }
       if (securityEnabled && securityAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Security Deposit', amount: parseFloat(securityAmount), cycle: 'one-time', start_date: currentYMD, created_by: user.id
+          group_id: groupId, name: 'Security Deposit', amount: parseFloat(securityAmount), cycle: 'one-time', start_date: currentYMD, created_by: memberId
         });
       }
 
       // 4. Create Utilities
       if (elecEnabled) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Electricity Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id
+          group_id: groupId, name: 'Electricity Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: memberId
         });
       }
       if (waterEnabled) {
         recurringToInsert.push({
-          group_id: groupId, name: 'Water Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: user.id
+          group_id: groupId, name: 'Water Bill', amount: 0, cycle: 'monthly', start_date: startOfMonth, created_by: memberId
         });
       }
       if (wifiEnabled && wifiAmount) {
         recurringToInsert.push({
-          group_id: groupId, name: 'WiFi Bill', amount: parseFloat(wifiAmount), cycle: 'monthly', start_date: startOfMonth, created_by: user.id
+          group_id: groupId, name: 'WiFi Bill', amount: parseFloat(wifiAmount), cycle: 'monthly', start_date: startOfMonth, created_by: memberId
         });
       }
 
