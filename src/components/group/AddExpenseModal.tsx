@@ -46,15 +46,19 @@ export default function AddExpenseModal({
   const defaultCycleStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-01`;
   const [linkedRecurringId, setLinkedRecurringId] = useState<string>(initialData?.recurring_expense_id || recurringTemplate?.id || '');
   const [linkedCycleDate, setLinkedCycleDate] = useState<string>(initialData?.cycle_date || cycleDateStr || defaultCycleStr);
+  const [monthsPrepaid, setMonthsPrepaid] = useState<number>(1);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
+    const scrollContainer = document.getElementById('dashboard-scroll-area');
+    if (!scrollContainer) return;
+    
     // Save original overflow
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    document.body.style.overflow = 'hidden';
+    const originalStyle = scrollContainer.style.overflow;
+    scrollContainer.style.overflow = 'hidden';
     
     return () => {
-      document.body.style.overflow = originalStyle;
+      scrollContainer.style.overflow = originalStyle || 'auto';
     };
   }, []);
 
@@ -232,101 +236,118 @@ export default function AddExpenseModal({
     setError('');
 
     try {
-      let expenseId = initialData?.id;
+      // If initialData exists, it's an edit, we only support editing one expense at a time.
+      // For new prepayments, we loop from 0 to monthsPrepaid - 1
+      const loopCount = initialData ? 1 : monthsPrepaid;
 
-      if (initialData) {
-        // Update existing expense
-        const { data: updatedExpense, error: expError } = await supabase
-          .from('expenses')
-          .update({
-            description: description.trim(),
-            labels: selectedLabels,
-            total_amount: total,
-            currency,
-            split_type: splitType,
-            date,
-            recurring_expense_id: linkedRecurringId || null,
-            cycle_date: linkedRecurringId ? linkedCycleDate : null,
-          })
-          .eq('id', expenseId)
-          .select()
-          .single();
+      for (let i = 0; i < loopCount; i++) {
+        let expenseId = initialData?.id;
+        
+        let currentCycleDate = linkedCycleDate;
+        if (linkedRecurringId && i > 0) {
+          const d = new Date(linkedCycleDate);
+          d.setMonth(d.getMonth() + i);
+          currentCycleDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+        }
 
-        if (expError) throw new Error('You do not have permission to edit this expense or it no longer exists.');
-
-        // Delete old payers and splits
-        await supabase.from('expense_payers').delete().eq('expense_id', expenseId);
-        await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
-      } else {
-        // Create new expense
-        const { data: expense, error: expError } = await supabase
-          .from('expenses')
-          .insert({
-            group_id: groupId,
-            description: description.trim(),
-            labels: selectedLabels,
-            total_amount: total,
-            currency,
-            split_type: splitType,
-            date,
-            created_by: currentMemberId,
-            recurring_expense_id: linkedRecurringId || null,
-            cycle_date: linkedRecurringId ? linkedCycleDate : null,
-          })
-          .select()
-          .single();
-
-        if (expError) throw expError;
-        expenseId = expense.id;
-      }
-
-      // 2. Insert payers
-      const payerRows = Object.entries(payers)
-        .filter(([, v]) => parseFloat(v) > 0)
-        .map(([memberId, amount]) => ({
-          expense_id: expenseId,
-          member_id: memberId,
-          amount_paid: parseFloat(amount),
-        }));
-
-      if (payerRows.length > 0) {
-        const { error: payerError } = await supabase
-          .from('expense_payers')
-          .insert(payerRows);
-        if (payerError) throw payerError;
-      }
-
-      // 3. Insert splits
-      const splitRows = Object.entries(splitPreview)
-        .filter(([, amount]) => amount > 0)
-        .map(([memberId, amount]) => ({
-          expense_id: expenseId,
-          member_id: memberId,
-          amount_owed: amount,
-          percentage: splitType === 'percentage' ? parseFloat(percentages[memberId] || '0') : null,
-          shares: splitType === 'shares' ? parseInt(shareValues[memberId] || '1') : null,
-        }));
-
-      if (splitRows.length > 0) {
-        const { error: splitError } = await supabase
-          .from('expense_splits')
-          .insert(splitRows);
-        if (splitError) throw splitError;
-      }
-
-      // 4. Upload receipt if attached
-      if (receiptFile) {
-        try {
-          const receiptUrl = await uploadReceipt(receiptFile, groupId, expenseId);
-          await supabase
+        if (initialData) {
+          // Update existing expense
+          const { data: updatedExpense, error: expError } = await supabase
             .from('expenses')
-            .update({ receipt_url: receiptUrl })
-            .eq('id', expenseId);
-        } catch {
-          // Non-fatal — expense is still created
-          console.error('Receipt upload failed');
+            .update({
+              description: description.trim(),
+              labels: selectedLabels,
+              total_amount: total,
+              currency,
+              split_type: splitType,
+              date,
+              recurring_expense_id: linkedRecurringId || null,
+              cycle_date: linkedRecurringId ? currentCycleDate : null,
+            })
+            .eq('id', expenseId)
+            .select()
+            .single();
+
+          if (expError) throw new Error('You do not have permission to edit this expense or it no longer exists.');
+
+          // Delete old payers and splits
+          await supabase.from('expense_payers').delete().eq('expense_id', expenseId);
+          await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
+        } else {
+          // Create new expense
+          const { data: expense, error: expError } = await supabase
+            .from('expenses')
+            .insert({
+              group_id: groupId,
+              description: i > 0 ? `${description.trim()} (Month ${i + 1})` : description.trim(),
+              labels: selectedLabels,
+              total_amount: total,
+              currency,
+              split_type: splitType,
+              date,
+              created_by: currentMemberId,
+              recurring_expense_id: linkedRecurringId || null,
+              cycle_date: linkedRecurringId ? currentCycleDate : null,
+            })
+            .select()
+            .single();
+
+          if (expError) throw expError;
+          expenseId = expense.id;
+        }
+
+        // 2. Insert payers
+        const payerRows = Object.entries(payers)
+          .filter(([, v]) => parseFloat(v) > 0)
+          .map(([memberId, amount]) => ({
+            expense_id: expenseId,
+            member_id: memberId,
+            amount_paid: parseFloat(amount),
+          }));
+
+        if (payerRows.length > 0) {
+          const { error: payerError } = await supabase
+            .from('expense_payers')
+            .insert(payerRows);
+          if (payerError) throw payerError;
+        }
+
+        // 3. Insert splits
+        const splitRows = Object.entries(splitPreview)
+          .filter(([, v]) => v > 0)
+          .map(([memberId, amount]) => {
+            const baseRow: any = {
+              expense_id: expenseId,
+              member_id: memberId,
+              amount_owed: amount,
+            };
+            if (splitType === 'percentage') baseRow.percentage = parseFloat(percentages[memberId] || '0');
+            if (splitType === 'shares') baseRow.shares = parseInt(shareValues[memberId] || '1');
+            return baseRow;
+          });
+
+        if (splitRows.length > 0) {
+          const { error: splitError } = await supabase
+            .from('expense_splits')
+            .insert(splitRows);
+          if (splitError) throw splitError;
+        }
+
+        // 4. Handle receipt
+        if (receiptFile) {
+          try {
+            const receiptUrl = await uploadReceipt(receiptFile, groupId, expenseId);
+            await supabase
+              .from('expenses')
+              .update({ receipt_url: receiptUrl })
+              .eq('id', expenseId);
+          } catch (err: any) {
+            console.error('Failed to upload receipt:', err);
+            // Non-fatal, keep going
+          }
         }
       }
+
 
       onClose();
     } catch (err: any) {
@@ -450,6 +471,18 @@ export default function AddExpenseModal({
                     onChange={(e) => setLinkedCycleDate(`${e.target.value}-01`)}
                     style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
                   />
+                )}
+                {linkedRecurringId && !initialData && (
+                  <select
+                    className="input-field"
+                    value={monthsPrepaid}
+                    onChange={(e) => setMonthsPrepaid(parseInt(e.target.value))}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                  >
+                    {[1, 2, 3, 6, 12].map(n => (
+                      <option key={n} value={n}>Prepay {n} Month{n > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
                 )}
               </div>
             </div>

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import CreateGroupModal from './CreateGroupModal';
+import GroupOnboardingWizard from './GroupOnboardingWizard';
 import JoinGroupModal from './JoinGroupModal';
 import UpiPromptModal from './UpiPromptModal';
 import AnimatedIcon from '@/components/ui/AnimatedIcon';
@@ -381,7 +381,9 @@ export default function DashboardShell({
         </header>
 
         {/* Scrollable Content Area */}
-        <div style={{
+        <div 
+          id="dashboard-scroll-area"
+          style={{
           flex: 1,
           overflowY: 'auto',
           position: 'relative',
@@ -391,7 +393,7 @@ export default function DashboardShell({
       </div>
 
       {/* Modals */}
-      {showCreateModal && <CreateGroupModal onClose={() => setShowCreateModal(false)} />}
+      {showCreateModal && <GroupOnboardingWizard onClose={() => setShowCreateModal(false)} />}
       {showJoinModal && <JoinGroupModal onClose={() => setShowJoinModal(false)} />}
       {showUpiPrompt && user?.id && <UpiPromptModal userId={user.id} onComplete={() => setShowUpiPrompt(false)} />}
     </div>

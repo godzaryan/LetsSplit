@@ -68,7 +68,7 @@ export default function MonthlyFixedExpenses({
       
       // If one-time, only show in the exact start month
       if (re.cycle === 'one-time') {
-        if (currentMonth.getTime() !== startMonth.getTime()) return false;
+        if (currentMonth.getFullYear() !== startMonth.getFullYear() || currentMonth.getMonth() !== startMonth.getMonth()) return false;
       }
       
       // If yearly, only show in the same month each year
@@ -86,10 +86,14 @@ export default function MonthlyFixedExpenses({
       const loadMaidData = async () => {
         const supabase = createClient();
         try {
-          const data = await fetchMaidDataForMonth(supabase, groupId, currentMonth);
-          if (data) {
-            const calc = calculateMaidPayout(data.maid, data.attendance, data.bonuses, currentMonth);
-            setMaidTargetAmount(calc ? calc.finalPayout : Number(data.maid.monthly_salary || 0));
+          const maidsData = await fetchMaidDataForMonth(supabase, groupId, currentMonth);
+          if (maidsData && maidsData.length > 0) {
+            let total = 0;
+            maidsData.forEach((data: any) => {
+              const calc = calculateMaidPayout(data.maid, data.attendance, data.bonuses, currentMonth);
+              total += calc ? calc.finalPayout : Number(data.maid.monthly_salary || 0);
+            });
+            setMaidTargetAmount(total);
           } else {
             setMaidTargetAmount(null);
           }
@@ -165,24 +169,55 @@ export default function MonthlyFixedExpenses({
             const isExpanded = expandedExpenses[expense.id];
 
             let statusNode: React.ReactNode = null;
-            if (isFullySettled) {
-              statusNode = `Settled • Total: ${currencySymbol}${totalLinkedAmount}`;
+            
+            const isOverpaid = targetAmount > 0 && totalLinkedAmount > targetAmount;
+            
+            if (isOverpaid) {
+              statusNode = (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Paid Extra</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 500 }}>
+                    <span style={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px' }}>
+                      Target: {currencySymbol}{targetAmount.toFixed(2)}
+                    </span>
+                    <span style={{ color: 'var(--accent-primary)', background: 'rgba(230, 0, 0, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                      Extra: {currencySymbol}{(totalLinkedAmount - targetAmount).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              );
+            } else if (isFullySettled) {
+              statusNode = (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-success)' }}>Settled</span>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px' }}>
+                    Total: {currencySymbol}{totalLinkedAmount.toFixed(2)}
+                  </div>
+                </div>
+              );
             } else if (isPartiallySettled) {
               statusNode = (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                  <span style={{ fontWeight: 600 }}>Partially Settled</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-warning)' }}>Partially Settled</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 500 }}>
-                    <span style={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px' }}>
+                    <span style={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px' }}>
                       Paid: {currencySymbol}{totalLinkedAmount.toFixed(2)}
                     </span>
-                    <span style={{ color: 'var(--accent-warning)', background: 'rgba(255, 170, 0, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                    <span style={{ color: 'var(--accent-warning)', background: 'rgba(255, 170, 0, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                       Left: {currencySymbol}{Math.max(0, targetAmount - totalLinkedAmount).toFixed(2)}
                     </span>
                   </div>
                 </div>
               );
             } else {
-              statusNode = `Pending • Target: ${targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount.toFixed(2)}`}`;
+              statusNode = (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Pending</span>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-primary)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px' }}>
+                    Target: {targetAmount === 0 ? 'Variable' : `${currencySymbol}${targetAmount.toFixed(2)}`}
+                  </div>
+                </div>
+              );
             }
 
             // Aggregate payers from all linked expenses

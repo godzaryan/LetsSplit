@@ -15,54 +15,47 @@ export async function fetchMaidDataForMonth(supabase: SupabaseClient, groupId: s
   const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
   const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
   
-  let relevantMaid = null;
+  let relevantMaids: any[] = [];
   if (maidsData && maidsData.length > 0) {
-    const sortedMaids = [...maidsData].sort((a, b) => {
-      const aTime = a.joined_date ? new Date(a.joined_date).getTime() : 0;
-      const bTime = b.joined_date ? new Date(b.joined_date).getTime() : 0;
-      return bTime - aTime;
-    });
-    relevantMaid = sortedMaids.find(m => {
-      const joined = m.joined_date || startOfMonth; // default to start of month if missing
+    relevantMaids = maidsData.filter(m => {
+      const joined = m.joined_date || startOfMonth; 
       const left = m.left_date;
       return joined <= endOfMonth && (!left || left >= startOfMonth);
     });
-    if (!relevantMaid) {
-      relevantMaid = sortedMaids.find(m => m.is_active) || sortedMaids[0];
-    }
   }
 
-  if (!relevantMaid) return null;
+  if (relevantMaids.length === 0) return null;
 
+  const cycleStr = startOfMonth;
+
+  // Fetch all attendance for this month for all relevant maids
+  const maidIds = relevantMaids.map(m => m.id);
   const { data: attData } = await supabase
     .from('maid_attendance')
     .select('*')
-    .eq('maid_id', relevantMaid.id)
+    .in('maid_id', maidIds)
     .gte('date', startOfMonth)
     .lte('date', endOfMonth);
 
-  const cycleStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
   const { data: bonusData } = await supabase
     .from('maid_bonuses')
     .select('*')
-    .eq('maid_id', relevantMaid.id)
+    .in('maid_id', maidIds)
     .eq('month', cycleStr);
 
-  return {
-    maid: relevantMaid,
-    attendance: attData || [],
-    bonuses: bonusData || []
-  };
+  return relevantMaids.map(maid => ({
+    maid,
+    attendance: attData?.filter(a => a.maid_id === maid.id) || [],
+    bonuses: bonusData?.filter(b => b.maid_id === maid.id) || []
+  }));
 }
 
 export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[], currentDate: Date) {
   if (!maid) return null;
   
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const requiredDays = Math.max(1, daysInMonth - maid.allowed_holidays_per_month);
-  const dailyRate = maid.monthly_salary / requiredDays;
   
-  let joinedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); // default to start of month
+  let joinedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); 
   if (maid.joined_date) {
     const parts = maid.joined_date.split('-');
     if (parts.length === 3) {
@@ -73,7 +66,7 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
   
   if (joinedDate.getFullYear() > currentDate.getFullYear() || 
       (joinedDate.getFullYear() === currentDate.getFullYear() && joinedDate.getMonth() > currentDate.getMonth())) {
-    return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
+    return { dailyRate: 0, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
   }
   
   let activeDaysInMonth = daysInMonth;
@@ -88,7 +81,7 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
     const leftDateObj = new Date(lYear, lMonth - 1, lDay);
     if (leftDateObj.getFullYear() < currentDate.getFullYear() || 
         (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() < currentDate.getMonth())) {
-      return { dailyRate, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
+      return { dailyRate: 0, absences: 0, billableAbsences: 0, basePayout: 0, totalBonuses: 0, finalPayout: 0 };
     }
     if (leftDateObj.getFullYear() === currentDate.getFullYear() && leftDateObj.getMonth() === currentDate.getMonth()) {
       const leftDay = leftDateObj.getDate();
@@ -99,9 +92,27 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
   
   const billableDaysInMonth = activeDaysInMonth;
   const presents = attendance.filter(a => a.status === 'present').length;
-  const absences = Math.max(0, billableDaysInMonth - presents);
-  const basePayout = Math.min(maid.monthly_salary, presents * dailyRate);
-  const billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
+  
+  let basePayout = 0;
+  let dailyRate = 0;
+  let absences = 0;
+  let billableAbsences = 0;
+
+  if (maid.payment_type === 'daily') {
+    dailyRate = maid.monthly_salary; // For daily, 'monthly_salary' represents daily wage
+    basePayout = presents * dailyRate;
+  } else {
+    // Fixed monthly
+    const requiredDays = Math.max(1, daysInMonth - maid.allowed_holidays_per_month);
+    dailyRate = maid.monthly_salary / requiredDays;
+    absences = Math.max(0, billableDaysInMonth - presents);
+    billableAbsences = Math.max(0, absences - maid.allowed_holidays_per_month);
+    
+    // Pro-rata based on active days
+    const maxPayoutForActiveDays = (maid.monthly_salary / daysInMonth) * activeDaysInMonth;
+    basePayout = Math.max(0, maxPayoutForActiveDays - (billableAbsences * dailyRate));
+  }
+  
   const totalBonuses = bonuses.reduce((sum, b) => sum + parseFloat(b.amount), 0);
   const finalPayout = basePayout + totalBonuses;
   
@@ -111,6 +122,7 @@ export function calculateMaidPayout(maid: any, attendance: any[], bonuses: any[]
     billableAbsences,
     basePayout,
     totalBonuses,
-    finalPayout
+    finalPayout,
+    presents
   };
 }
