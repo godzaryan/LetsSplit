@@ -313,6 +313,7 @@ export default async function DashboardPage() {
                   const total = groupTotalSpend[m.groups.id] || 0;
                   const mySpend = groupMySpend[m.groups.id] || 0;
                   const balance = groupBalances[m.groups.id] || 0;
+                  const currencySymbol = m.groups.currency === 'INR' ? '₹' : m.groups.currency === 'USD' ? '$' : m.groups.currency === 'EUR' ? '€' : '¤';
                   return (
                   <a key={m.groups.id} href={`/dashboard/group/${m.groups.id}`} className="card animate-fade-in" style={{
                     padding: '24px',
@@ -356,7 +357,7 @@ export default async function DashboardPage() {
                         <h4 style={{ fontWeight: 800, fontSize: '17px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{m.groups.name}</h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'var(--bg-secondary)', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                            {m.groups.currency} Based
+                            {currencySymbol} Based
                           </span>
                         </div>
                       </div>
@@ -368,7 +369,7 @@ export default async function DashboardPage() {
                       <div>
                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>Total Spend</p>
                         <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {m.groups.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          {currencySymbol}{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -381,14 +382,14 @@ export default async function DashboardPage() {
                           <>
                             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>You are owed</p>
                             <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-success)' }}>
-                              +{m.groups.currency}{balance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                              +{currencySymbol}{balance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </>
                         ) : (
                           <>
                             <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>You owe</p>
                             <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-danger)' }}>
-                              -{m.groups.currency}{Math.abs(balance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                              -{currencySymbol}{Math.abs(balance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </>
                         )}
