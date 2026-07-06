@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AnimatedIcon from '@/components/ui/AnimatedIcon';
 import { Users, Upload, Download, BarChart3, Rocket, Hand, TrendingUp, TrendingDown, CalendarClock, Tag, Trophy, ArrowRight } from 'lucide-react';
+import { fetchMaidDataForMonth, calculateMaidPayout } from '@/lib/services/maid';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -127,7 +128,24 @@ export default async function DashboardPage() {
       .in('recurring_expense_id', recurringIds.length > 0 ? recurringIds : ['00000000-0000-0000-0000-000000000000'])
       .eq('is_deleted', false);
 
+    const groupsWithMaid = recurring?.filter((r: any) => r.name.toLowerCase() === 'maid').map((r: any) => r.group_id) || [];
+    const uniqueMaidGroups = Array.from(new Set(groupsWithMaid));
+    const maidTargets: Record<string, number> = {};
+    for (const gid of uniqueMaidGroups) {
+       const mData = await fetchMaidDataForMonth(supabase as any, gid as string, nowForCycle);
+       if (mData && mData.length > 0) {
+           let total = 0;
+           mData.forEach((data: any) => {
+             const calc = calculateMaidPayout(data.maid, data.attendance, data.bonuses, nowForCycle);
+             total += calc ? calc.finalPayout : Number(data.maid.monthly_salary || 0);
+           });
+           maidTargets[gid as string] = total;
+       }
+    }
+
     recurring?.forEach((r: any) => {
+      if (r.name.toLowerCase() === 'cylinder') return;
+
       const isSettled = settledExpenses?.some((e: any) => {
         if (r.cycle === 'one-time') return e.recurring_expense_id === r.id;
         return e.recurring_expense_id === r.id && e.cycle_date === currentCycleStr;
@@ -135,11 +153,23 @@ export default async function DashboardPage() {
       
       if (!isSettled) {
         let userShare = 0;
-        r.recurring_expense_splits?.forEach((s: any) => {
-          if (userMemberIds.includes(s.member_id)) {
-            userShare += Number(s.amount_owed);
-          }
-        });
+        
+        if (r.name.toLowerCase() === 'maid' && maidTargets[r.group_id] !== undefined) {
+           const totalTarget = maidTargets[r.group_id];
+           r.recurring_expense_splits?.forEach((s: any) => {
+             if (userMemberIds.includes(s.member_id)) {
+               const percentage = Number(r.amount) > 0 ? Number(s.amount_owed) / Number(r.amount) : 0;
+               userShare += totalTarget * percentage;
+             }
+           });
+        } else {
+           r.recurring_expense_splits?.forEach((s: any) => {
+             if (userMemberIds.includes(s.member_id)) {
+               userShare += Number(s.amount_owed);
+             }
+           });
+        }
+
         if (userShare > 0) {
           upcomingBills.push({ name: r.name, amount: userShare, groupId: r.group_id, cycle: r.cycle });
           unpaidScheduled += userShare;
