@@ -6,6 +6,7 @@ import { uploadReceipt } from '@/lib/receipts';
 import AnimatedIcon from '../ui/AnimatedIcon';
 import { Paperclip, X } from 'lucide-react';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { createPortal } from 'react-dom';
 
 interface AddExpenseModalProps {
   groupId: string;
@@ -358,19 +359,26 @@ export default function AddExpenseModal({
     }
   };
 
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0, 0, 0, 0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 200,
-      padding: '20px',
-      backdropFilter: 'blur(4px)',
-    }}
-    onClick={(e) => e.target === e.currentTarget && onClose()}
+  if (!mounted) return null;
+
+  return createPortal(
+    <div 
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '20px',
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div className="glass animate-fade-in" style={{
         width: '100%',
@@ -886,6 +894,7 @@ export default function AddExpenseModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

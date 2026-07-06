@@ -5,7 +5,7 @@ import { Users, Upload, Download, BarChart3, Rocket, Hand, TrendingUp, TrendingD
 import { fetchMaidDataForMonth, calculateMaidPayout } from '@/lib/services/maid';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect('/auth/login');
@@ -23,8 +23,8 @@ export default async function DashboardPage() {
     .eq('is_ghost', false);
 
   const totalGroups = memberships?.length || 0;
-  const userMemberIds = memberships?.map(m => m.id) || [];
-  const groupIds = memberships?.map(m => m.group_id) || [];
+  const userMemberIds = memberships?.map((m: any) => m.id) || [];
+  const groupIds = memberships?.map((m: any) => m.group_id) || [];
 
   let globalOwe = 0;
   let globalOwed = 0;

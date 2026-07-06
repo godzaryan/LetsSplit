@@ -310,7 +310,7 @@ export default function DashboardShell({
                 overflow: 'hidden',
               }}>
                 {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} suppressHydrationWarning />
                 ) : (
                   <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
                     {(user?.display_name || 'U').charAt(0).toUpperCase()}

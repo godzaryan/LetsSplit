@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface ConfirmDialogProps {
@@ -25,9 +26,15 @@ export default function ConfirmDialog({
   isAlert = false,
 }: ConfirmDialogProps) {
   useLockBodyScroll(isOpen);
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
     <div 
       style={{
         position: 'fixed',
@@ -115,6 +122,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

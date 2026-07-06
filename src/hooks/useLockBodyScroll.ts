@@ -5,14 +5,23 @@ export function useLockBodyScroll(isLocked: boolean = true) {
     if (!isLocked) return;
 
     // Get original body overflow
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    
-    // Prevent scrolling on mount
+    const originalBodyStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = 'hidden';
+
+    // Also lock dashboard scroll area if it exists
+    let originalScrollAreaStyle = '';
+    const scrollArea = document.getElementById('dashboard-scroll-area');
+    if (scrollArea) {
+      originalScrollAreaStyle = window.getComputedStyle(scrollArea).overflow;
+      scrollArea.style.overflow = 'hidden';
+    }
     
     // Re-enable scrolling when component unmounts
     return () => {
-      document.body.style.overflow = originalStyle;
+      document.body.style.overflow = originalBodyStyle;
+      if (scrollArea) {
+        scrollArea.style.overflow = originalScrollAreaStyle;
+      }
     };
   }, [isLocked]);
 }

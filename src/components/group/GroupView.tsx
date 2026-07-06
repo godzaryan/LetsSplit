@@ -805,6 +805,7 @@ function GroupSettings({ group, currentRole }: { group: any; currentRole: string
         <>
           <GroupLabelsEditor group={group} />
           <ExpenseEditingSettings group={group} />
+          <DeleteGroupSettings group={group} />
         </>
       )}
 
@@ -963,6 +964,65 @@ function ExpenseEditingSettings({ group }: { group: any }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DeleteGroupSettings({ group }: { group: any }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const supabase = createClient();
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setErrorMessage('');
+    
+    try {
+      const { error } = await supabase.from('groups').delete().eq('id', group.id);
+      if (error) throw error;
+      
+      // Navigate to dashboard on success
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete group');
+      setIsDeleting(false);
+      setShowConfirm(false);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: '16px', borderColor: 'rgba(255,107,107,0.2)' }}>
+      <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px', color: 'var(--accent-danger)' }}>Delete Group</h3>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
+        Permanently delete this group and all its data (expenses, members, recurring expenses). This action cannot be undone.
+      </p>
+      
+      {errorMessage && (
+        <div style={{ marginBottom: '16px', color: 'var(--accent-danger)', fontSize: '13px' }}>
+          {errorMessage}
+        </div>
+      )}
+
+      <button
+        className="btn-primary"
+        onClick={() => setShowConfirm(true)}
+        style={{ background: 'var(--accent-danger)', padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}
+      >
+        Delete Group
+      </button>
+
+      <ConfirmDialog
+        isOpen={showConfirm}
+        title="Delete Group"
+        message={`Are you sure you want to completely delete "${group.name}"? This will delete all expenses, settlements, and member records forever. This cannot be undone!`}
+        confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Group'}
+        type="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }
